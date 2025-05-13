@@ -1,0 +1,7 @@
+-- AlterTable
+ALTER TABLE `Utilisateur` ADD COLUMN `activite` VARCHAR(191) NULL,
+    ADD COLUMN `age` INTEGER NULL,
+    ADD COLUMN `nom` VARCHAR(191) NULL,
+    ADD COLUMN `photoUrl` VARCHAR(191) NULL,
+    ADD COLUMN `sexe` VARCHAR(191) NULL,
+    ADD COLUMN `taille` INTEGER NULL;

@@ -1,0 +1,312 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+/// Types d’accompagnement possibles
+enum SideType {
+  PROTEIN
+  BREAKFAST_PROTEIN
+  FRUIT_SIDE
+  CARB
+  FAT
+  DAIRY
+  CEREAL
+  VEGETABLE_SIDE
+}
+
+model User {
+  id               String   @id @default(cuid())
+  email            String   @unique
+  poids            Float?
+  metabolismeCible Int?
+
+  /// Champs Stripe
+  stripeCustomerId       String?   @unique
+  stripeSubscriptionId   String?
+  stripePriceId          String?
+  stripeStatus           String?
+  stripeCurrentPeriodEnd DateTime?
+
+  /// Champs d'abonnement
+  trialEndsAt     DateTime? // Fin de la période d’essai gratuit
+  isSubscribed    Boolean   @default(false)
+  cancelAtPeriodEnd Boolean @default(false)  // ← nouvelle colonne
+  subscriptionType String?  // Type d'abonnement: "mensuel" ou "annuel" ou "recette"
+  subscriptionEnd DateTime? // Date de fin de l'abonnement
+  hasAccessToFullContent Boolean @default(false) // Accès complet ou limité
+
+  createdAt     DateTime  @default(now())
+  activite      String?
+  age           Int?
+  nom           String?
+  photoUrl      String?
+  sexe          String?
+  taille        Int?
+  objectifPoids String?
+  emailVerified DateTime?
+  image         String?
+  name          String?
+  password      String?
+  role          String    @default("user")
+
+  /// Nouveaux champs pour ton formulaire
+  phone     String?
+  birthdate DateTime?
+  gender    String?
+
+  accounts         Account[]         @relation("UserAccounts")
+  favoris          Favori[]
+  historiquePoids  HistoriquePoids[]
+  mensurations     Mensurations[]
+  sessions         Session[]         @relation("UserSessions")
+  repasJournaliers RepasJournalier[]
+  menuJournaliers  MenuJournalier[]
+
+  // Relations pour les tokens
+  passwordResetTokens     PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
+
+  @@map("Utilisateur")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  expiresAt DateTime
+
+  @@index([userId])
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  expiresAt DateTime
+
+  @@index([userId])
+}
+
+model HistoriquePoids {
+  id            String   @id @default(cuid())
+  date          DateTime @default(now())
+  poids         Float
+  utilisateurId String
+  utilisateur   User     @relation(fields: [utilisateurId], references: [id])
+
+  @@index([utilisateurId])
+  @@map("HistoriquePoids")
+}
+
+model Mensurations {
+  id            String   @id @default(cuid())
+  date          DateTime @default(now())
+  taille        Int?
+  hanches       Int?
+  cuisses       Int?
+  bras          Int?
+  tailleAbdo    Int?
+  poitrine      Int?
+  mollets       Int?
+  masseGrasse   Float?
+  utilisateurId String
+  utilisateur   User     @relation(fields: [utilisateurId], references: [id])
+
+  @@index([utilisateurId])
+  @@map("Mensurations")
+}
+
+model Favori {
+  id            String   @id @default(cuid())
+  recetteId     String
+  utilisateurId String
+  utilisateur   User     @relation(fields: [utilisateurId], references: [id])
+  recette       Recette  @relation(fields: [recetteId], references: [id])
+
+  @@index([utilisateurId])
+  @@map("Favori")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation("UserAccounts", fields: [userId], references: [id])
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("Account")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation("UserSessions", fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("Session")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("VerificationToken")
+}
+
+model Recette {
+  id               String               @id @default(cuid())
+  name             String
+  description      String?
+  photoUrl         String?
+  preparationTime  Int
+  cookingTime      Int
+  steps            Json
+  ingredients      RecetteIngredient[]
+  price            Float?
+  calories         Float?
+  protein          Float?
+  fat              Int?
+  carbs            Int?
+  timePrep         Int?
+  timeCook         Int?
+  createdAt        DateTime             @default(now())
+  categories       RecetteCategory[]
+  repasJournaliers RepasJournalier[]
+  menuJournaliers  MenuJournalier[]
+  allowedSides     RecetteAllowedSide[]
+  favoris          Favori[]
+
+  scalable Boolean @default(true)
+}
+
+model Ingredient {
+  id             String  @id @default(cuid())
+  name           String
+  unit           String  @default("g")
+  price          Float
+  calories       Int
+  protein        Int
+  fat            Int
+  carbs          Int
+  ingredientType String?
+
+  sideTypes       IngredientSideType[]
+  recettes        RecetteIngredient[]
+  accompagnements Accompagnement[]
+
+  @@map("Ingredient")
+}
+
+model RecetteIngredient {
+  id           String     @id @default(cuid())
+  recette      Recette    @relation(fields: [recetteId], references: [id])
+  recetteId    String
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  ingredientId String
+  quantity     Float
+  unit         String
+
+  @@unique([recetteId, ingredientId])
+}
+
+model Category {
+  id        String            @id @default(cuid())
+  name      String            @unique
+  createdAt DateTime          @default(now())
+  recettes  RecetteCategory[]
+
+  @@map("Category")
+}
+
+model RecetteCategory {
+  id         String   @id @default(cuid())
+  recetteId  String
+  categoryId String
+  recette    Recette  @relation(fields: [recetteId], references: [id])
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  @@unique([recetteId, categoryId])
+  @@map("RecetteCategory")
+}
+
+model RepasJournalier {
+  id         String   @id @default(cuid())
+  date       DateTime
+  repasType  String
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  recetteId  String?
+  recette    Recette? @relation(fields: [recetteId], references: [id])
+  customName String?
+  calories   Int?
+  protein    Float?
+  fat        Int?
+  carbs      Int?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([recetteId])
+}
+
+model MenuJournalier {
+  id              String           @id @default(cuid())
+  userId          String
+  user            User             @relation(fields: [userId], references: [id])
+  date            DateTime
+  repasType       String
+  recetteId       String?
+  recette         Recette?         @relation(fields: [recetteId], references: [id])
+  accompagnements Accompagnement[]
+  createdAt       DateTime         @default(now())
+
+  @@index([userId])
+  @@index([recetteId])
+}
+
+model RecetteAllowedSide {
+  recette   Recette  @relation(fields: [recetteId], references: [id])
+  recetteId String
+  sideType  SideType
+
+  @@id([recetteId, sideType])
+}
+
+model IngredientSideType {
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  ingredientId String
+  sideType     SideType
+
+  @@id([ingredientId, sideType])
+}
+
+model Accompagnement {
+  id           String         @id @default(cuid())
+  menu         MenuJournalier @relation(fields: [menuId], references: [id])
+  menuId       String
+  ingredient   Ingredient     @relation(fields: [ingredientId], references: [id])
+  ingredientId String
+  quantity     Int
+
+  @@unique([menuId, ingredientId])
+}
