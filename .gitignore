@@ -1,3 +1,14 @@
-node_modules
+# Node modules
+node_modules/
+
+# Next.js build output
+.next/
+
+# Vercel deployment files
+.vercel/
+
+# Local cache
+.cache/
+
 # Keep environment variables out of version control
 .env
