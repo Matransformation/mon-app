@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "./api/auth/[...nextauth]";
-import stripe from "../lib/stripe";
+import { stripe } from "../lib/stripe";
 import prisma from "../lib/prisma";
 
 export default async function handler(req, res) {
