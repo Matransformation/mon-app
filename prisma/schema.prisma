@@ -1,113 +1,87 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "node_modules/@prisma/client"
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-/// Types d’accompagnement possibles
-enum SideType {
-  PROTEIN
-  BREAKFAST_PROTEIN
-  FRUIT_SIDE
-  CARB
-  FAT
-  DAIRY
-  CEREAL
-  VEGETABLE_SIDE
-}
-
 model User {
-  id               String   @id @default(cuid())
-  email            String   @unique
-  poids            Float?
-  metabolismeCible Int?
-
-  /// Champs Stripe
-  stripeCustomerId       String?   @unique
-  stripeSubscriptionId   String?
-  stripePriceId          String?
-  stripeStatus           String?
-  stripeCurrentPeriodEnd DateTime?
-
-  /// Champs d'abonnement
-  trialEndsAt     DateTime? // Fin de la période d’essai gratuit
-  isSubscribed    Boolean   @default(false)
-  cancelAtPeriodEnd Boolean @default(false)  // ← nouvelle colonne
-  subscriptionType String?  // Type d'abonnement: "mensuel" ou "annuel" ou "recette"
-  subscriptionEnd DateTime? // Date de fin de l'abonnement
-  hasAccessToFullContent Boolean @default(false) // Accès complet ou limité
-
-  createdAt     DateTime  @default(now())
-  activite      String?
-  age           Int?
-  nom           String?
-  photoUrl      String?
-  sexe          String?
-  taille        Int?
-  objectifPoids String?
-  emailVerified DateTime?
-  image         String?
-  name          String?
-  password      String?
-  role          String    @default("user")
-
-  /// Nouveaux champs pour ton formulaire
-  phone     String?
-  birthdate DateTime?
-  gender    String?
-
-  accounts         Account[]         @relation("UserAccounts")
-  favoris          Favori[]
-  historiquePoids  HistoriquePoids[]
-  mensurations     Mensurations[]
-  sessions         Session[]         @relation("UserSessions")
-  repasJournaliers RepasJournalier[]
-  menuJournaliers  MenuJournalier[]
-
-  // Relations pour les tokens
-  passwordResetTokens     PasswordResetToken[]
+  id                      String                   @id @default(cuid()) @db.VarChar(191)
+  email                   String                   @unique(map: "utilisateur_email_key") @db.VarChar(191)
+  poids                   Float?
+  metabolismeCible        Int?
+  createdAt               DateTime                 @default(dbgenerated("CURRENT_TIMESTAMP(3)"))
+  activite                String?                  @db.VarChar(191)
+  age                     Int?
+  nom                     String?                  @db.VarChar(191)
+  photoUrl                String?                  @db.VarChar(191)
+  sexe                    String?                  @db.VarChar(191)
+  taille                  Int?
+  objectifPoids           String?                  @db.VarChar(191)
+  emailVerified           DateTime?
+  image                   String?                  @db.VarChar(191)
+  name                    String?                  @db.VarChar(191)
+  password                String?                  @db.VarChar(191)
+  role                    String                   @default("user") @db.VarChar(191)
+  stripeCurrentPeriodEnd  DateTime?
+  stripeCustomerId        String?                  @unique(map: "utilisateur_stripecustomerid_key") @db.VarChar(191)
+  stripePriceId           String?                  @db.VarChar(191)
+  stripeStatus            String?                  @db.VarChar(191)
+  stripeSubscriptionId    String?                  @db.VarChar(191)
+  birthdate               DateTime?
+  gender                  String?                  @db.VarChar(191)
+  phone                   String?                  @db.VarChar(191)
+  isSubscribed            Boolean                  @default(false)
+  trialEndsAt             DateTime?
+  hasAccessToFullContent  Boolean                  @default(false)
+  subscriptionEnd         DateTime?
+  subscriptionType        String?                  @db.VarChar(191)
+  cancelAtPeriodEnd       Boolean                  @default(false)
+  accounts                Account[]                @relation("UserAccounts")
   emailVerificationTokens EmailVerificationToken[]
+  favoris                 Favori[]
+  historiquePoids         HistoriquePoids[]
+  mensurations            Mensurations[]
+  menuJournaliers         MenuJournalier[]
+  passwordResetTokens     PasswordResetToken[]
+  repasJournaliers        RepasJournalier[]
+  sessions                Session[]                @relation("UserSessions")
 
   @@map("Utilisateur")
 }
 
 model PasswordResetToken {
-  id        String   @id @default(cuid())
-  token     String   @unique
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String
+  id        String   @id @default(cuid()) @db.VarChar(191)
+  token     String   @unique(map: "passwordresettoken_token_key") @db.VarChar(191)
+  userId    String   @db.VarChar(191)
   expiresAt DateTime
-
-  @@index([userId])
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model EmailVerificationToken {
-  id        String   @id @default(cuid())
-  token     String   @unique
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String
+  id        String   @id @default(cuid()) @db.VarChar(191)
+  token     String   @unique(map: "emailverificationtoken_token_key") @db.VarChar(191)
+  userId    String   @db.VarChar(191)
   expiresAt DateTime
-
-  @@index([userId])
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model HistoriquePoids {
-  id            String   @id @default(cuid())
-  date          DateTime @default(now())
+  id            String   @id @default(cuid()) @db.VarChar(191)
+  date          DateTime @default(dbgenerated("CURRENT_TIMESTAMP(3)"))
   poids         Float
-  utilisateurId String
+  utilisateurId String   @db.VarChar(191)
   utilisateur   User     @relation(fields: [utilisateurId], references: [id])
 
-  @@index([utilisateurId])
   @@map("HistoriquePoids")
 }
 
 model Mensurations {
-  id            String   @id @default(cuid())
-  date          DateTime @default(now())
+  id            String   @id @default(cuid()) @db.VarChar(191)
+  date          DateTime @default(dbgenerated("CURRENT_TIMESTAMP(3)"))
   taille        Int?
   hanches       Int?
   cuisses       Int?
@@ -116,197 +90,185 @@ model Mensurations {
   poitrine      Int?
   mollets       Int?
   masseGrasse   Float?
-  utilisateurId String
+  utilisateurId String   @db.VarChar(191)
   utilisateur   User     @relation(fields: [utilisateurId], references: [id])
 
-  @@index([utilisateurId])
   @@map("Mensurations")
 }
 
 model Favori {
-  id            String   @id @default(cuid())
-  recetteId     String
-  utilisateurId String
-  utilisateur   User     @relation(fields: [utilisateurId], references: [id])
-  recette       Recette  @relation(fields: [recetteId], references: [id])
+  id            String  @id @default(cuid()) @db.VarChar(191)
+  recetteId     String  @db.VarChar(191)
+  utilisateurId String  @db.VarChar(191)
+  recette       Recette @relation(fields: [recetteId], references: [id])
+  utilisateur   User    @relation(fields: [utilisateurId], references: [id])
 
-  @@index([utilisateurId])
   @@map("Favori")
 }
 
 model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String?
-  access_token      String?
+  id                String  @id @default(cuid()) @db.VarChar(191)
+  userId            String  @db.VarChar(191)
+  type              String  @db.VarChar(191)
+  provider          String  @db.VarChar(191)
+  providerAccountId String  @db.VarChar(191)
+  refresh_token     String? @db.VarChar(191)
+  access_token      String? @db.VarChar(191)
   expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
+  token_type        String? @db.VarChar(191)
+  scope             String? @db.VarChar(191)
+  id_token          String? @db.VarChar(191)
+  session_state     String? @db.VarChar(191)
   user              User    @relation("UserAccounts", fields: [userId], references: [id])
 
-  @@unique([provider, providerAccountId])
-  @@index([userId])
+  @@unique([provider, providerAccountId], map: "account_provider_provideraccountid_key")
   @@map("Account")
 }
 
 model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
+  id           String   @id @default(cuid()) @db.VarChar(191)
+  sessionToken String   @unique(map: "session_sessiontoken_key") @db.VarChar(191)
+  userId       String   @db.VarChar(191)
   expires      DateTime
   user         User     @relation("UserSessions", fields: [userId], references: [id])
 
-  @@index([userId])
   @@map("Session")
 }
 
 model VerificationToken {
-  identifier String
-  token      String   @unique
+  identifier String   @db.VarChar(191)
+  token      String   @unique(map: "verificationtoken_token_key") @db.VarChar(191)
   expires    DateTime
 
-  @@unique([identifier, token])
+  @@unique([identifier, token], map: "verificationtoken_identifier_token_key")
   @@map("VerificationToken")
 }
 
 model Recette {
-  id               String               @id @default(cuid())
-  name             String
-  description      String?
-  photoUrl         String?
-  preparationTime  Int
-  cookingTime      Int
-  steps            Json
-  ingredients      RecetteIngredient[]
+  id               String               @id @default(cuid()) @db.VarChar(191)
+  name             String               @db.VarChar(191)
+  description      String?              @db.VarChar(191)
   price            Float?
-  calories         Float?
-  protein          Float?
-  fat              Int?
-  carbs            Int?
-  timePrep         Int?
   timeCook         Int?
-  createdAt        DateTime             @default(now())
-  categories       RecetteCategory[]
-  repasJournaliers RepasJournalier[]
+  timePrep         Int?
+  cookingTime      Int
+  photoUrl         String?              @db.VarChar(191)
+  preparationTime  Int
+  steps            Json                 @db.Json
+  createdAt        DateTime             @default(dbgenerated("CURRENT_TIMESTAMP(3)"))
+  calories         Float?
+  carbs            Int?
+  fat              Int?
+  protein          Float?
+  scalable         Boolean              @default(true)
+  favoris          Favori[]
   menuJournaliers  MenuJournalier[]
   allowedSides     RecetteAllowedSide[]
-  favoris          Favori[]
-
-  scalable Boolean @default(true)
+  categories       RecetteCategory[]
+  ingredients      RecetteIngredient[]
+  repasJournaliers RepasJournalier[]
 }
 
 model Ingredient {
-  id             String  @id @default(cuid())
-  name           String
-  unit           String  @default("g")
-  price          Float
-  calories       Int
-  protein        Int
-  fat            Int
-  carbs          Int
-  ingredientType String?
-
+  id              String               @id @default(cuid()) @db.VarChar(191)
+  name            String               @db.VarChar(191)
+  calories        Int
+  carbs           Int
+  fat             Int
+  price           Float
+  protein         Int
+  ingredientType  String?              @db.VarChar(191)
+  unit            String               @default("g") @db.VarChar(191)
+  accompagnements Accompagnement[]
   sideTypes       IngredientSideType[]
   recettes        RecetteIngredient[]
-  accompagnements Accompagnement[]
 
   @@map("Ingredient")
 }
 
 model RecetteIngredient {
-  id           String     @id @default(cuid())
-  recette      Recette    @relation(fields: [recetteId], references: [id])
-  recetteId    String
-  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
-  ingredientId String
+  id           String     @id @default(cuid()) @db.VarChar(191)
+  recetteId    String     @db.VarChar(191)
+  ingredientId String     @db.VarChar(191)
   quantity     Float
-  unit         String
+  unit         String     @db.VarChar(191)
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  recette      Recette    @relation(fields: [recetteId], references: [id])
 
-  @@unique([recetteId, ingredientId])
+  @@unique([recetteId, ingredientId], map: "recetteingredient_recetteid_ingredientid_key")
 }
 
 model Category {
-  id        String            @id @default(cuid())
-  name      String            @unique
-  createdAt DateTime          @default(now())
+  id        String            @id @default(cuid()) @db.VarChar(191)
+  name      String            @unique(map: "category_name_key") @db.VarChar(191)
+  createdAt DateTime          @default(dbgenerated("CURRENT_TIMESTAMP(3)"))
   recettes  RecetteCategory[]
 
   @@map("Category")
 }
 
 model RecetteCategory {
-  id         String   @id @default(cuid())
-  recetteId  String
-  categoryId String
-  recette    Recette  @relation(fields: [recetteId], references: [id])
+  id         String   @id @default(cuid()) @db.VarChar(191)
+  recetteId  String   @db.VarChar(191)
+  categoryId String   @db.VarChar(191)
   category   Category @relation(fields: [categoryId], references: [id])
+  recette    Recette  @relation(fields: [recetteId], references: [id])
 
-  @@unique([recetteId, categoryId])
+  @@unique([recetteId, categoryId], map: "recettecategory_recetteid_categoryid_key")
   @@map("RecetteCategory")
 }
 
 model RepasJournalier {
-  id         String   @id @default(cuid())
+  id         String   @id @default(cuid()) @db.VarChar(191)
   date       DateTime
-  repasType  String
-  userId     String
-  user       User     @relation(fields: [userId], references: [id])
-  recetteId  String?
-  recette    Recette? @relation(fields: [recetteId], references: [id])
-  customName String?
+  repasType  String   @db.VarChar(191)
+  userId     String   @db.VarChar(191)
+  recetteId  String?  @db.VarChar(191)
+  customName String?  @db.VarChar(191)
   calories   Int?
   protein    Float?
   fat        Int?
   carbs      Int?
-  createdAt  DateTime @default(now())
-
-  @@index([userId])
-  @@index([recetteId])
+  createdAt  DateTime @default(dbgenerated("CURRENT_TIMESTAMP(3)"))
+  recette    Recette? @relation(fields: [recetteId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
 }
 
 model MenuJournalier {
-  id              String           @id @default(cuid())
-  userId          String
-  user            User             @relation(fields: [userId], references: [id])
+  id              String           @id @default(cuid()) @db.VarChar(191)
+  userId          String           @db.VarChar(191)
   date            DateTime
-  repasType       String
-  recetteId       String?
-  recette         Recette?         @relation(fields: [recetteId], references: [id])
+  repasType       String           @db.VarChar(191)
+  recetteId       String?          @db.VarChar(191)
+  createdAt       DateTime         @default(dbgenerated("CURRENT_TIMESTAMP(3)"))
   accompagnements Accompagnement[]
-  createdAt       DateTime         @default(now())
-
-  @@index([userId])
-  @@index([recetteId])
+  recette         Recette?         @relation(fields: [recetteId], references: [id])
+  user            User             @relation(fields: [userId], references: [id])
 }
 
 model RecetteAllowedSide {
-  recette   Recette  @relation(fields: [recetteId], references: [id])
-  recetteId String
-  sideType  SideType
+  recetteId String  @db.VarChar(191)
+  sideType  String
+  recette   Recette @relation(fields: [recetteId], references: [id])
 
   @@id([recetteId, sideType])
 }
 
 model IngredientSideType {
+  ingredientId String     @db.VarChar(191)
+  sideType     String
   ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
-  ingredientId String
-  sideType     SideType
 
   @@id([ingredientId, sideType])
 }
 
 model Accompagnement {
-  id           String         @id @default(cuid())
-  menu         MenuJournalier @relation(fields: [menuId], references: [id])
-  menuId       String
-  ingredient   Ingredient     @relation(fields: [ingredientId], references: [id])
-  ingredientId String
+  id           String         @id @default(cuid()) @db.VarChar(191)
+  menuId       String         @db.VarChar(191)
+  ingredientId String         @db.VarChar(191)
   quantity     Int
+  ingredient   Ingredient     @relation(fields: [ingredientId], references: [id])
+  menu         MenuJournalier @relation(fields: [menuId], references: [id])
 
-  @@unique([menuId, ingredientId])
+  @@unique([menuId, ingredientId], map: "accompagnement_menuid_ingredientid_key")
 }
