@@ -1,48 +1,70 @@
+// pages/api/auth/[...nextauth].js
+
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import prisma from "../../../lib/prisma";
 import { verifyPassword } from "../../../lib/auth";
 
-export const authOptions = {
+export default NextAuth({
   adapter: PrismaAdapter(prisma),
+  // Active le log en dev pour aider au debug si besoin
+  logger: {
+    error(code, metadata) {
+      console.error("[next-auth][error]", code, metadata);
+    },
+    warn(code) {
+      console.warn("[next-auth][warn]", code);
+    },
+    debug(code, metadata) {
+      if (process.env.NODE_ENV === "development") {
+        console.debug("[next-auth][debug]", code, metadata);
+      }
+    },
+  },
+
   providers: [
     CredentialsProvider({
       name: "Identifiants",
       credentials: {
-        email: { label: "Email", type: "email" },
+        email: { label: "Email", type: "email", placeholder: "jsmith@acme.com" },
         password: { label: "Mot de passe", type: "password" },
       },
       async authorize(credentials) {
+        // 1) On récupère l'utilisateur
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
         });
         if (!user) {
           throw new Error("Aucun compte pour cet email");
         }
-        const isValid = await verifyPassword(
-          credentials.password,
-          user.password
-        );
+        // 2) On vérifie le mot de passe
+        const isValid = await verifyPassword(credentials.password, user.password);
         if (!isValid) {
           throw new Error("Mot de passe invalide");
         }
+        // 3) Si ok, on renvoie l'objet user (sera stocké dans le JWT)
         return user;
       },
     }),
   ],
+
   session: {
     strategy: "jwt",
   },
+
   pages: {
     signIn: "/login",
   },
+
+  // important pour que NextAuth puisse signer/verifier les JWT en prod
   secret: process.env.NEXTAUTH_SECRET,
 
   callbacks: {
     async jwt({ token, user }) {
+      // Au moment de la connexion, on peut ajouter des infos dans le token
       if (user) {
-        // On enrichit le token avec les infos d’abonnement à la connexion
+        // On récupère quelques champs depuis la base
         const dbUser = await prisma.user.findUnique({
           where: { id: user.id },
           select: {
@@ -57,7 +79,6 @@ export const authOptions = {
             trialEndsAt: true,
           },
         });
-
         token.id = dbUser.id;
         token.email = dbUser.email;
         token.name = dbUser.name;
@@ -72,7 +93,7 @@ export const authOptions = {
     },
 
     async session({ session, token }) {
-      // On passe tout depuis le token vers la session
+      // On expose ces mêmes infos dans session.user côté client
       if (token?.id) {
         session.user.id = token.id;
         session.user.name = token.name;
@@ -86,6 +107,4 @@ export const authOptions = {
       return session;
     },
   },
-};
-
-export default NextAuth(authOptions);
+});
