@@ -6,22 +6,8 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import prisma from "../../../lib/prisma";
 import { verifyPassword } from "../../../lib/auth";
 
-export default NextAuth({
+export const authOptions = {
   adapter: PrismaAdapter(prisma),
-  // Active le log en dev pour aider au debug si besoin
-  logger: {
-    error(code, metadata) {
-      console.error("[next-auth][error]", code, metadata);
-    },
-    warn(code) {
-      console.warn("[next-auth][warn]", code);
-    },
-    debug(code, metadata) {
-      if (process.env.NODE_ENV === "development") {
-        console.debug("[next-auth][debug]", code, metadata);
-      }
-    },
-  },
 
   providers: [
     CredentialsProvider({
@@ -31,19 +17,16 @@ export default NextAuth({
         password: { label: "Mot de passe", type: "password" },
       },
       async authorize(credentials) {
-        // 1) On récupère l'utilisateur
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
         });
         if (!user) {
           throw new Error("Aucun compte pour cet email");
         }
-        // 2) On vérifie le mot de passe
         const isValid = await verifyPassword(credentials.password, user.password);
         if (!isValid) {
           throw new Error("Mot de passe invalide");
         }
-        // 3) Si ok, on renvoie l'objet user (sera stocké dans le JWT)
         return user;
       },
     }),
@@ -57,14 +40,11 @@ export default NextAuth({
     signIn: "/login",
   },
 
-  // important pour que NextAuth puisse signer/verifier les JWT en prod
   secret: process.env.NEXTAUTH_SECRET,
 
   callbacks: {
     async jwt({ token, user }) {
-      // Au moment de la connexion, on peut ajouter des infos dans le token
       if (user) {
-        // On récupère quelques champs depuis la base
         const dbUser = await prisma.user.findUnique({
           where: { id: user.id },
           select: {
@@ -93,7 +73,6 @@ export default NextAuth({
     },
 
     async session({ session, token }) {
-      // On expose ces mêmes infos dans session.user côté client
       if (token?.id) {
         session.user.id = token.id;
         session.user.name = token.name;
@@ -107,4 +86,6 @@ export default NextAuth({
       return session;
     },
   },
-});
+};
+
+export default NextAuth(authOptions);
