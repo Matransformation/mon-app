@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+<url><loc>https://matransformation.fr</loc><lastmod>2025-05-16T12:32:45.046Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://matransformation.fr/abonnement</loc><lastmod>2025-05-16T12:32:45.046Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://matransformation.fr/admin-dashboard</loc><lastmod>2025-05-16T12:32:45.046Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://matransformation.fr/admin/ajouter-recette</loc><lastmod>2025-05-16T12:32:45.046Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://matransformation.fr/admin/categories</loc><lastmod>2025-05-16T12:32:45.046Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://matransformation.fr/admin/dashboard</loc><lastmod>2025-05-16T12:32:45.046Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://matransformation.fr/admin/import-ingredient</loc><lastmod>2025-05-16T12:32:45.046Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://matransformation.fr/admin/ingredients</loc><lastmod>2025-05-16T12:32:45.046Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://matransformation.fr/admin/recettes</loc><lastmod>2025-05-16T12:32:45.046Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://matransformation.fr/admin/utilisateurs</loc><lastmod>2025-05-16T12:32:45.046Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://matransformation.fr/auth/signin</loc><lastmod>2025-05-16T12:32:45.047Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://matransformation.fr/cgu</loc><lastmod>2025-05-16T12:32:45.047Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://matransformation.fr/confidentialite</loc><lastmod>2025-05-16T12:32:45.047Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://matransformation.fr/cookies</loc><lastmod>2025-05-16T12:32:45.047Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://matransformation.fr/dashboard</loc><lastmod>2025-05-16T12:32:45.047Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://matransformation.fr/forgot-password</loc><lastmod>2025-05-16T12:32:45.047Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://matransformation.fr/liste-courses</loc><lastmod>2025-05-16T12:32:45.047Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://matransformation.fr/login</loc><lastmod>2025-05-16T12:32:45.047Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://matransformation.fr/mentions-legales</loc><lastmod>2025-05-16T12:32:45.047Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://matransformation.fr/menu</loc><lastmod>2025-05-16T12:32:45.047Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://matransformation.fr/mes-favoris</loc><lastmod>2025-05-16T12:32:45.047Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://matransformation.fr/mon-compte</loc><lastmod>2025-05-16T12:32:45.047Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://matransformation.fr/recettes</loc><lastmod>2025-05-16T12:32:45.047Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://matransformation.fr/register</loc><lastmod>2025-05-16T12:32:45.047Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://matransformation.fr/remboursement</loc><lastmod>2025-05-16T12:32:45.047Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://matransformation.fr/success</loc><lastmod>2025-05-16T12:32:45.047Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://matransformation.fr/tarifs</loc><lastmod>2025-05-16T12:32:45.047Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://matransformation.fr/verify-email</loc><lastmod>2025-05-16T12:32:45.047Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+</urlset>
