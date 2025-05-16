@@ -3,7 +3,7 @@ import "../styles/globals.css"
 import { SessionProvider } from "next-auth/react"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import Script from "next/script"
-import CookieBanner from "@/components/CookieBanner"
+import CookieBanner from "../components/CookieBanner"
 import { useEffect, useState } from "react"
 import { Cookies } from "react-cookie-consent"
 
