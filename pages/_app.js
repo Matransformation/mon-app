@@ -1,4 +1,3 @@
-// pages/_app.js
 import "../styles/globals.css"
 import { SessionProvider } from "next-auth/react"
 import { SpeedInsights } from "@vercel/speed-insights/next"
@@ -20,9 +19,10 @@ export default function App({ Component, pageProps }) {
   return (
     <SessionProvider session={pageProps.session}>
       <>
+        {/* Scripts marketing (si consentement donné) */}
         {hasConsent && (
           <>
-            {/* Google Analytics */}
+            {/* Google Analytics 4 */}
             <Script
               strategy="afterInteractive"
               src="https://www.googletagmanager.com/gtag/js?id=G-J3JHVGXW4Z"
@@ -62,8 +62,13 @@ export default function App({ Component, pageProps }) {
           </>
         )}
 
+        {/* Contenu de la page */}
         <Component {...pageProps} />
+
+        {/* Bannière cookie avec mascotte */}
         <CookieBanner />
+
+        {/* Outil Vercel */}
         <SpeedInsights />
       </>
     </SessionProvider>
