@@ -3,6 +3,7 @@ import { SessionProvider } from "next-auth/react"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import Script from "next/script"
 import CookieBanner from "../components/CookieBanner"
+import WhatsappButton from "../components/WhatsappButton"
 import { useEffect, useState } from "react"
 import { Cookies } from "react-cookie-consent"
 
@@ -67,6 +68,9 @@ export default function App({ Component, pageProps }) {
 
         {/* Bannière cookie avec mascotte */}
         <CookieBanner />
+
+        {/* Bouton WhatsApp flottant */}
+        <WhatsappButton />
 
         {/* Outil Vercel */}
         <SpeedInsights />
