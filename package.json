@@ -13,6 +13,8 @@
     "@prisma/client": "^6.7.0",
     "@sendgrid/mail": "^8.1.5",
     "@stripe/stripe-js": "^7.3.0",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@vercel/speed-insights": "^1.2.0",
     "axios": "^1.8.4",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.2",
@@ -38,6 +40,7 @@
     "swr": "^2.3.3"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^15.3.2",
     "@types/node": "22.14.1",
     "@types/react": "19.1.2",
     "autoprefixer": "^10.4.14",
