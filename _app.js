@@ -28,7 +28,7 @@ export default function App({ Component, pageProps }) {
 
         {/* Meta Pixel */}
         <Script
-          id="facebook-pixel"
+          id="fb-pixel"
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
@@ -45,16 +45,6 @@ export default function App({ Component, pageProps }) {
             `,
           }}
         />
-
-        {/* Pixel fallback (for noscript users) */}
-        <noscript>
-          <img
-            height="1"
-            width="1"
-            style={{ display: "none" }}
-            src="https://www.facebook.com/tr?id=582481197693399&ev=PageView&noscript=1"
-          />
-        </noscript>
 
         <Component {...pageProps} />
         <SpeedInsights />
