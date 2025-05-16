@@ -60,6 +60,31 @@ export default function App({ Component, pageProps }) {
                 `,
               }}
             />
+
+            {/* OneSignal Push Notifications */}
+            <Script
+              src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
+              strategy="afterInteractive"
+              defer
+            />
+            <Script
+              id="onesignal-init"
+              strategy="afterInteractive"
+              dangerouslySetInnerHTML={{
+                __html: `
+                  window.OneSignalDeferred = window.OneSignalDeferred || [];
+                  OneSignalDeferred.push(async function(OneSignal) {
+                    await OneSignal.init({
+                      appId: "e05dcce1-435a-4585-a0bb-80a877ad05f7",
+                      safari_web_id: "web.onesignal.auto.57daeefd-2777-4d55-aef6-93b3ff4b973a",
+                      notifyButton: {
+                        enable: true,
+                      },
+                    });
+                  });
+                `,
+              }}
+            />
           </>
         )}
 
