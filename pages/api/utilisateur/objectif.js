@@ -1,25 +1,27 @@
-import prisma from "../../../lib/prisma";
+// pages/api/utilisateur/objectif.js
+import prisma from "../../../lib/prisma"
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ message: "Méthode non autorisée" });
+    return res.status(405).json({ error: "Method not allowed" })
   }
 
-  const { utilisateurId, objectifPoids } = req.body;
-
-  if (!utilisateurId || !objectifPoids) {
-    return res.status(400).json({ message: "Champs requis manquants" });
+  const { utilisateurId, objectifPoids } = req.body
+  if (!utilisateurId || objectifPoids === undefined) {
+    return res.status(400).json({ error: "Paramètres invalides" })
   }
 
   try {
-    await prisma.user.update({
-        where: { id: utilisateurId },
-      data: { objectifPoids: parseFloat(objectifPoids) },
-    });
-
-    res.status(200).json({ message: "Objectif de poids mis à jour avec succès" });
-  } catch (error) {
-    console.error("Erreur mise à jour de l'objectif :", error);
-    res.status(500).json({ message: "Erreur serveur" });
+    const updated = await prisma.user.update({
+      where: { id: utilisateurId },
+      data: {
+        // on force la conversion en string
+        objectifPoids: String(objectifPoids),
+      },
+    })
+    return res.status(200).json({ objectifPoids: updated.objectifPoids })
+  } catch (err) {
+    console.error(err)
+    return res.status(500).json({ error: "Erreur serveur" })
   }
 }

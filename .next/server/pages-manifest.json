@@ -2,5 +2,8 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/": "pages/index.js"
+  "/api/utilisateur/poids/[poidsId]": "pages/api/utilisateur/poids/[poidsId].js",
+  "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
+  "/api/utilisateur/metabolisme": "pages/api/utilisateur/metabolisme.js",
+  "/dashboard": "pages/dashboard.js"
 }
