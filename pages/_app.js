@@ -9,30 +9,30 @@ import { useEffect, useState } from "react"
 import { Cookies } from "react-cookie-consent"
 
 export default function App({ Component, pageProps }) {
-  // true seulement si consent === "true"
-  const [hasConsent, setHasConsent] = useState(false)
-  // null = pas encore cliqué, "true" ou "false" = décision prise
+  // cookieDecision : null = pas cliqué, "true" = accepté, "false" = refusé
   const [cookieDecision, setCookieDecision] = useState(null)
+  // hasConsent : true seulement si cookieDecision === "true"
+  const [hasConsent, setHasConsent] = useState(false)
 
   useEffect(() => {
-    const consent = Cookies.get("cookieConsent")
+    const consent = Cookies.get("cookieConsent") // "true" | "false" | undefined
     if (consent !== undefined) {
-      setCookieDecision(consent)            // on sait que l'utilisateur a cliqué
-      if (consent === "true") setHasConsent(true) // on active GA/Pixel si accepté
+      setCookieDecision(consent)
+      if (consent === "true") setHasConsent(true)
     }
   }, [])
 
   return (
     <SessionProvider session={pageProps.session}>
       <>
-        {/* 1) OneSignal SDK chargé QUELQUE SOIT le consentement */}
+        {/* 1) OneSignal SDK — TOUJOURS chargé */}
         <Script
           src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
           strategy="afterInteractive"
           defer
         />
 
-        {/* 2) GA4 + FB Pixel si et seulement si consentement = "true" */}
+        {/* 2) GA4 + FB Pixel — UNIQUEMENT si l’utilisateur a accepté */}
         {hasConsent && (
           <>
             {/* Google Analytics 4 */}
@@ -75,7 +75,7 @@ export default function App({ Component, pageProps }) {
           </>
         )}
 
-        {/* 3) Init OneSignal dès que l'utilisateur a cliqué sur Accepter ou Refuser */}
+        {/* 3) Init OneSignal — dès que l’utilisateur a cliqué (accept ou refuse) */}
         {cookieDecision !== null && (
           <Script
             id="onesignal-init"
@@ -112,16 +112,16 @@ export default function App({ Component, pageProps }) {
           />
         )}
 
-        {/* 4) Contenu principal */}
+        {/* 4) Le contenu principal */}
         <Component {...pageProps} />
 
         {/* 5) Bannière cookies */}
         <CookieBanner />
 
-        {/* 6) Bouton WhatsApp seulement après décision cookie */}
+        {/* 6) WhatsApp — uniquement après décision (accept ou refuse) */}
         {cookieDecision !== null && <WhatsappButton />}
 
-        {/* 7) Outil Vercel */}
+        {/* 7) Vercel Speed Insights */}
         <SpeedInsights />
       </>
     </SessionProvider>
