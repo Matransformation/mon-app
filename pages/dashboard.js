@@ -23,7 +23,6 @@ import {
   Tooltip,
   Legend,
 } from "chart.js"
-
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -40,38 +39,31 @@ const Line = dynamic(
 )
 
 export default function Dashboard({ utilisateur }) {
+  // 1) Hooks appelés en haut, avant tout return
   const { data: session, status } = useSession()
-
-  // 1) state “live” de la liste des poids
   const [poidsList, setPoidsList] = useState(utilisateur.historiquePoids)
-  // 2) state du métabolisme pour mise à jour instantanée
   const [metabolismeCible, setMetabolismeCible] = useState(
     utilisateur.metabolismeCible ?? ""
   )
 
-  if (status === "loading") return <p>Chargement…</p>
-  if (!session) return <p>Non autorisé</p>
-
-  // Toujours le dernier poids
-  const dernierPoids = poidsList.at(-1)?.poids ?? 0
-
-  // Tri et calculs intermédiaires
+  // 2) Calculs mémorisés
   const sorted = useMemo(
-    () =>
-      [...poidsList].sort(
-        (a, b) => new Date(a.date) - new Date(b.date)
-      ),
+    () => [...poidsList].sort((a, b) => new Date(a.date) - new Date(b.date)),
     [poidsList]
   )
   const poidsInitial = sorted[0]?.poids ?? 0
+  const dernierPoids = poidsList.at(-1)?.poids ?? 0
   const perdu = (poidsInitial - dernierPoids).toFixed(1)
 
-  // Handlers
+  // 3) Handlers (utilisent session, mais pas de hooks)
   const handleAddWeight = async (poids) => {
     const res = await fetch("/api/utilisateur/poids", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ utilisateurId: session.user.id, poids }),
+      body: JSON.stringify({
+        utilisateurId: session.user.id,
+        poids,
+      }),
     })
     const data = await res.json()
     setPoidsList((prev) => [...prev, data])
@@ -94,6 +86,11 @@ export default function Dashboard({ utilisateur }) {
     return { metabolismeCible }
   }
 
+  // 4) Returns conditionnels
+  if (status === "loading") return <p>Chargement…</p>
+  if (!session) return <p>Non autorisé</p>
+
+  // 5) Render
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <Navbar />
@@ -111,9 +108,6 @@ export default function Dashboard({ utilisateur }) {
             onAdd={handleAddWeight}
             onDelete={handleDeleteWeight}
           />
-          <p className="mt-4 text-sm text-gray-600">
-            ✅ Déjà perdu : <strong>{perdu} kg</strong>
-          </p>
         </Card>
 
         {/* 3) Métabolisme recalculé automatiquement */}
@@ -132,7 +126,7 @@ export default function Dashboard({ utilisateur }) {
           <WeightChart historiquePoids={poidsList} ChartComponent={Line} />
         </Card>
 
-        {/* 5) Historique des mensurations */}
+        {/* 5) Historique mensurations */}
         <Card className="md:col-span-2">
           <MeasurementsHistory mensurations={utilisateur.mensurations} />
         </Card>
@@ -144,7 +138,10 @@ export default function Dashboard({ utilisateur }) {
               fetch("/api/utilisateur/mensurations", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ utilisateurId: session.user.id, ...data }),
+                body: JSON.stringify({
+                  utilisateurId: session.user.id,
+                  ...data,
+                }),
               })
             }
           />

@@ -1,5 +1,5 @@
 // components/dashboard/MetabolismForm.js
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 
 export default function MetabolismForm({
   utilisateur,
@@ -15,22 +15,27 @@ export default function MetabolismForm({
   })
   const [metabolisme, setMetabolisme] = useState(metabolismeInit ?? "")
   const [saving, setSaving] = useState(false)
+  const initialMount = useRef(true)
 
-  // Si la prop metabolismeInit change, on synchronise
+  // Sync si SSR change
   useEffect(() => {
     setMetabolisme(metabolismeInit ?? "")
   }, [metabolismeInit])
 
-  // Dès que le poids change ET que tous les champs sont remplis, on recalcule
+  // Recalcule automatique sur changement de poids
   useEffect(() => {
-    const allFilled = form.sexe && form.age && form.taille && form.activite
-    if (allFilled) {
+    if (initialMount.current) {
+      initialMount.current = false
+      return
+    }
+    // on recalcule seulement si les champs sont remplis
+    if (form.sexe && form.age && form.taille && form.activite) {
       recalc()
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [poidsActuel])
 
-  const recalc = async () => {
+  async function recalc() {
     setSaving(true)
     try {
       const { metabolismeCible: newMeta } = await onSave({
@@ -47,12 +52,8 @@ export default function MetabolismForm({
     }
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
-    if (!poidsActuel) {
-      alert("⚠️ Enregistre d'abord ton poids.")
-      return
-    }
     recalc()
   }
 
