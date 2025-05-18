@@ -67,7 +67,8 @@ export default function App({ Component, pageProps }) {
               strategy="afterInteractive"
               defer
             />
-            <Script
+           {/* OneSignal Push Notifications */}
+<Script
   src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
   strategy="afterInteractive"
   defer
@@ -106,6 +107,7 @@ export default function App({ Component, pageProps }) {
   }}
 />
 
+
           </>
         )}
 
@@ -116,7 +118,8 @@ export default function App({ Component, pageProps }) {
         <CookieBanner />
 
         {/* Bouton WhatsApp flottant */}
-        <WhatsappButton />
+        {Cookies.get("cookieConsent") && <WhatsappButton />}
+
 
         {/* Outil Vercel */}
         <SpeedInsights />
