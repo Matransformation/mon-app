@@ -1,3 +1,4 @@
+// pages/_app.js
 import "../styles/globals.css"
 import { SessionProvider } from "next-auth/react"
 import { SpeedInsights } from "@vercel/speed-insights/next"
@@ -8,26 +9,30 @@ import { useEffect, useState } from "react"
 import { Cookies } from "react-cookie-consent"
 
 export default function App({ Component, pageProps }) {
+  // true seulement si consent === "true"
   const [hasConsent, setHasConsent] = useState(false)
+  // null = pas encore cliqué, "true" ou "false" = décision prise
+  const [cookieDecision, setCookieDecision] = useState(null)
 
   useEffect(() => {
     const consent = Cookies.get("cookieConsent")
-    if (consent === "true") {
-      setHasConsent(true)
+    if (consent !== undefined) {
+      setCookieDecision(consent)            // on sait que l'utilisateur a cliqué
+      if (consent === "true") setHasConsent(true) // on active GA/Pixel si accepté
     }
   }, [])
 
   return (
     <SessionProvider session={pageProps.session}>
       <>
-        {/* OneSignal SDK — toujours chargé pour rendre window.OneSignal disponible */}
+        {/* 1) OneSignal SDK chargé QUELQUE SOIT le consentement */}
         <Script
           src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
           strategy="afterInteractive"
           defer
         />
 
-        {/* Scripts marketing (si consentement donné) */}
+        {/* 2) GA4 + FB Pixel si et seulement si consentement = "true" */}
         {hasConsent && (
           <>
             {/* Google Analytics 4 */}
@@ -67,54 +72,56 @@ export default function App({ Component, pageProps }) {
                 `,
               }}
             />
-
-            {/* OneSignal Init (conditionné au consentement) */}
-            <Script
-              id="onesignal-init"
-              strategy="afterInteractive"
-              dangerouslySetInnerHTML={{
-                __html: `
-                  window.OneSignalDeferred = window.OneSignalDeferred || [];
-                  OneSignalDeferred.push(async function(OneSignal) {
-                    await OneSignal.init({
-                      appId: "e05dcce1-435a-4585-a0bb-80a877ad05f7",
-                      safari_web_id: "web.onesignal.auto.57daeefd-2777-4d55-aef6-93b3ff4b973a",
-                      notifyButton: {
-                        enable: true,
-                        position: 'top-right',
-                        text: {
-                          'tip.state.unsubscribed': 'Recevoir les notifications',
-                          'tip.state.subscribed': 'Vous êtes abonné',
-                          'tip.state.blocked': 'Notifications bloquées',
-                          'message.prenotify': "Cliquez pour activer les notifications",
-                          'message.action.subscribed': "Merci de vous être abonné !",
-                          'message.action.resubscribed': "Vous êtes à nouveau abonné",
-                          'message.action.unsubscribed': "Vous ne recevrez plus de notifications",
-                          'dialog.main.title': "Gérer les notifications",
-                          'dialog.main.button.subscribe': "S’abonner",
-                          'dialog.main.button.unsubscribe': "Se désabonner",
-                          'dialog.blocked.title': "Débloquez les notifications",
-                          'dialog.blocked.message': "Suivez ces instructions pour autoriser les notifications :"
-                        }
-                      }
-                    });
-                  });
-                `,
-              }}
-            />
           </>
         )}
 
-        {/* Contenu de la page */}
+        {/* 3) Init OneSignal dès que l'utilisateur a cliqué sur Accepter ou Refuser */}
+        {cookieDecision !== null && (
+          <Script
+            id="onesignal-init"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `
+                window.OneSignalDeferred = window.OneSignalDeferred || [];
+                OneSignalDeferred.push(async function(OneSignal) {
+                  await OneSignal.init({
+                    appId: "e05dcce1-435a-4585-a0bb-80a877ad05f7",
+                    safari_web_id: "web.onesignal.auto.57daeefd-2777-4d55-aef6-93b3ff4b973a",
+                    notifyButton: {
+                      enable: true,
+                      position: 'top-right',
+                      text: {
+                        'tip.state.unsubscribed': 'Recevoir les notifications',
+                        'tip.state.subscribed': 'Vous êtes abonné',
+                        'tip.state.blocked': 'Notifications bloquées',
+                        'message.prenotify': "Cliquez pour activer les notifications",
+                        'message.action.subscribed': "Merci de vous être abonné !",
+                        'message.action.resubscribed': "Vous êtes à nouveau abonné",
+                        'message.action.unsubscribed': "Vous ne recevrez plus de notifications",
+                        'dialog.main.title': "Gérer les notifications",
+                        'dialog.main.button.subscribe': "S’abonner",
+                        'dialog.main.button.unsubscribe': "Se désabonner",
+                        'dialog.blocked.title': "Débloquez les notifications",
+                        'dialog.blocked.message': "Suivez ces instructions pour autoriser les notifications :"
+                      }
+                    }
+                  });
+                });
+              `,
+            }}
+          />
+        )}
+
+        {/* 4) Contenu principal */}
         <Component {...pageProps} />
 
-        {/* Bannière cookie avec mascotte */}
+        {/* 5) Bannière cookies */}
         <CookieBanner />
 
-        {/* Bouton WhatsApp après consentement (accepté OU refusé) */}
-        {Cookies.get("cookieConsent") && <WhatsappButton />}
+        {/* 6) Bouton WhatsApp seulement après décision cookie */}
+        {cookieDecision !== null && <WhatsappButton />}
 
-        {/* Outil Vercel */}
+        {/* 7) Outil Vercel */}
         <SpeedInsights />
       </>
     </SessionProvider>
