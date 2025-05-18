@@ -9,33 +9,33 @@ import { useEffect, useState } from "react"
 import { Cookies } from "react-cookie-consent"
 
 export default function App({ Component, pageProps }) {
-  // cookieDecision : null = pas cliqué, "true" = accepté, "false" = refusé
+  // null = pas encore cliqué, "true" = accepté, "false" = refusé
   const [cookieDecision, setCookieDecision] = useState(null)
-  // hasConsent : true seulement si cookieDecision === "true"
-  const [hasConsent, setHasConsent] = useState(false)
 
+  // On lit d'abord le cookie si déjà présent (rechargement, etc.)
   useEffect(() => {
     const consent = Cookies.get("cookieConsent") // "true" | "false" | undefined
-    if (consent !== undefined) {
+    if (consent === "true" || consent === "false") {
       setCookieDecision(consent)
-      if (consent === "true") setHasConsent(true)
     }
   }, [])
+
+  // Pour toggler GA/Pixel
+  const hasConsent = cookieDecision === "true"
 
   return (
     <SessionProvider session={pageProps.session}>
       <>
-        {/* 1) OneSignal SDK — TOUJOURS chargé */}
+        {/* 1) SDK OneSignal TOUJOURS chargé pour que window.OneSignal existe */}
         <Script
           src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
           strategy="afterInteractive"
           defer
         />
 
-        {/* 2) GA4 + FB Pixel — UNIQUEMENT si l’utilisateur a accepté */}
+        {/* 2) GA4 + Facebook Pixel UNIQUEMENT si l’utilisateur a ACCEPTÉ */}
         {hasConsent && (
           <>
-            {/* Google Analytics 4 */}
             <Script
               strategy="afterInteractive"
               src="https://www.googletagmanager.com/gtag/js?id=G-J3JHVGXW4Z"
@@ -52,8 +52,6 @@ export default function App({ Component, pageProps }) {
                 `,
               }}
             />
-
-            {/* Facebook Pixel */}
             <Script
               id="fb-pixel"
               strategy="afterInteractive"
@@ -75,7 +73,7 @@ export default function App({ Component, pageProps }) {
           </>
         )}
 
-        {/* 3) Init OneSignal — dès que l’utilisateur a cliqué (accept ou refuse) */}
+        {/* 3) OneSignal init — dès que l’utilisateur a pris une décision */}
         {cookieDecision !== null && (
           <Script
             id="onesignal-init"
@@ -112,13 +110,16 @@ export default function App({ Component, pageProps }) {
           />
         )}
 
-        {/* 4) Le contenu principal */}
+        {/* 4) Contenu de la page */}
         <Component {...pageProps} />
 
-        {/* 5) Bannière cookies */}
-        <CookieBanner />
+        {/* 5) Bannière Cookie avec callbacks */}
+        <CookieBanner
+          onAccept={() => setCookieDecision("true")}
+          onDecline={() => setCookieDecision("false")}
+        />
 
-        {/* 6) WhatsApp — uniquement après décision (accept ou refuse) */}
+        {/* 6) WhatsApp — seulement après décision (accepté ou refusé) */}
         {cookieDecision !== null && <WhatsappButton />}
 
         {/* 7) Vercel Speed Insights */}
