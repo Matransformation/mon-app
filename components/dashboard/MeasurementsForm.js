@@ -1,8 +1,7 @@
-// components/dashboard/MeasurementsForm.js
 import React, { useState } from "react";
 
 export default function MeasurementsForm({ onSave }) {
-  const initialForm = {
+  const [form, setForm] = useState({
     taille: "",
     hanches: "",
     cuisses: "",
@@ -10,91 +9,50 @@ export default function MeasurementsForm({ onSave }) {
     poitrine: "",
     mollets: "",
     masseGrasse: "",
-  };
-  const [form, setForm] = useState(initialForm);
+  });
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (Object.values(form).every((v) => v === "")) return;
-    onSave(form);
-    setForm(initialForm);
+    // onSave renvoie l'objet créé { id, date, ... }
+    await onSave(form);
+    // reset
+    setForm({
+      taille: "",
+      hanches: "",
+      cuisses: "",
+      bras: "",
+      poitrine: "",
+      mollets: "",
+      masseGrasse: "",
+    });
   };
 
   return (
-    <div className="bg-white shadow p-4 rounded mb-6">
+    <form onSubmit={handleSubmit} className="bg-white shadow p-6 rounded">
       <h2 className="text-lg font-semibold mb-4">Ajouter une mensuration</h2>
-
-      {/* Mobile: champs empilés */}
-      <form onSubmit={handleSubmit} className="md:hidden space-y-3">
-        {Object.keys(initialForm).map((key) => (
-          <div key={key} className="flex flex-col">
-            <label htmlFor={key} className="mb-1 capitalize text-sm text-gray-700">
-              {key}
-            </label>
-            <input
-              type="number"
-              step="0.1"
-              id={key}
-              name={key}
-              value={form[key]}
-              onChange={handleChange}
-              placeholder={key}
-              className="border p-2 rounded text-sm"
-            />
-          </div>
+      <div className="grid grid-cols-2 gap-3">
+        {Object.entries(form).map(([key, val]) => (
+          <input
+            key={key}
+            name={key}
+            type="number"
+            placeholder={key}
+            value={val}
+            onChange={handleChange}
+            className="border p-2 rounded"
+            required
+          />
         ))}
-        <button
-          type="submit"
-          className="w-full bg-brand hover:bg-opacity-90 text-white rounded py-2 transition"
-        >
-          Enregistrer
-        </button>
-      </form>
-
-      {/* Desktop: tableau */}
-      <form onSubmit={handleSubmit} className="hidden md:block">
-        <div className="overflow-x-auto mb-4">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="bg-gray-100">
-                {Object.keys(initialForm).map((key) => (
-                  <th key={key} className="border px-3 py-2 capitalize">
-                    {key}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                {Object.keys(initialForm).map((key) => (
-                  <td key={key} className="border p-2">
-                    <input
-                      type="number"
-                      step="0.1"
-                      name={key}
-                      value={form[key]}
-                      onChange={handleChange}
-                      placeholder={key}
-                      className="w-full border rounded px-2 py-1 text-sm"
-                    />
-                  </td>
-                ))}
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <button
-          type="submit"
-          className="bg-brand hover:bg-opacity-90 text-white rounded py-2 px-4 transition"
-        >
-          Enregistrer
-        </button>
-      </form>
-    </div>
+      </div>
+      <button
+        type="submit"
+        className="mt-4 bg-orange-500 text-white px-4 py-2 rounded"
+      >
+        Enregistrer
+      </button>
+    </form>
   );
 }

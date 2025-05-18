@@ -1,18 +1,69 @@
-export default function MeasurementsHistory({ mensurations }) {
-    if (!mensurations?.length) return null
-    const histos = [...mensurations].sort((a,b) => new Date(b.date) - new Date(a.date))
-    const keys = ["taille","hanches","cuisses","bras","poitrine","mollets","masseGrasse"]
-    function variation(curr, next) { if (!next) return null; const diff=curr-next; return diff===0?" (–)":` (${diff>0?"+"+diff:diff})` }
-    return (
-      <div className="bg-white p-4 rounded shadow mb-6">
-        <h2 className="text-lg font-semibold mb-2">Historique mensurations</h2>
-        {histos.map((m,idx) => (
-          <div key={m.id} className="border-b py-2 text-sm">
-            <p className="font-semibold">{new Date(m.date).toLocaleDateString("fr-FR")}</p>
-            {keys.map(key => m[key]!=null && <p key={key}>{key} : {m[key]}<span className="text-gray-500">{variation(m[key], histos[idx+1]?.[key])}</span></p>)}
-          </div>
-        ))}
-      </div>
-    )
+// components/dashboard/MeasurementsHistory.js
+import React, { useMemo } from "react";
+
+export default function MeasurementsHistory({ mensurations, onDelete }) {
+  if (!mensurations.length) return <p>Aucune mensuration.</p>;
+
+  // Trie par date décroissante
+  const sorted = useMemo(
+    () =>
+      [...mensurations].sort(
+        (a, b) => new Date(b.date) - new Date(a.date)
+      ),
+    [mensurations]
+  );
+
+  // Pour chaque métrique, on calcule la variation par rapport à l'entrée suivante
+  function getVariation(key, idx) {
+    const next = sorted[idx + 1];
+    if (!next || next[key] == null) return null;
+    const diff = sorted[idx][key] - next[key];
+    if (diff === 0) return " (–)";
+    return ` (${diff > 0 ? "+" : ""}${diff.toFixed(1)})`;
   }
-  
+
+  return (
+    <div className="bg-white shadow p-6 rounded mb-6">
+      <h2 className="text-lg font-semibold mb-4">Historique mensurations</h2>
+      <ul className="space-y-4 text-sm">
+        {sorted.map((m, idx) => (
+          <li
+            key={m.id}
+            className="flex justify-between items-start border-b pb-2"
+          >
+            <div>
+              <p className="font-semibold">
+                {new Date(m.date).toLocaleDateString("fr-FR")}
+              </p>
+              {[
+                "taille",
+                "hanches",
+                "cuisses",
+                "bras",
+                "poitrine",
+                "mollets",
+                "masseGrasse",
+              ].map(
+                (key) =>
+                  m[key] != null && (
+                    <p key={key}>
+                      {key} : <strong>{m[key]}</strong>
+                      <span className="text-gray-500">
+                        {getVariation(key, idx)}
+                      </span>
+                    </p>
+                  )
+              )}
+            </div>
+            <button
+              onClick={() => onDelete(m.id)}
+              className="text-red-600 hover:underline"
+            >
+              Supprimer
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
