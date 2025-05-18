@@ -1,3 +1,4 @@
+// pages/_app.js
 import "../styles/globals.css"
 import { SessionProvider } from "next-auth/react"
 import { SpeedInsights } from "@vercel/speed-insights/next"
@@ -8,25 +9,19 @@ import { useEffect, useState } from "react"
 import { Cookies } from "react-cookie-consent"
 
 export default function App({ Component, pageProps }) {
-  // undefined tant que la bannière n'a pas été cliquée, "true"/"false" après
-  const [cookieDecision, setCookieDecision] = useState(undefined)
+  const [hasConsent, setHasConsent] = useState(false)
 
   useEffect(() => {
-    const consent = Cookies.get("cookieConsent") // "true" | "false" | undefined
-    if (consent !== undefined) {
-      setCookieDecision(consent)
+    const consent = Cookies.get("cookieConsent") // "true" si accepté
+    if (consent === "true") {
+      setHasConsent(true)
     }
   }, [])
-
-  // hasConsent pour GA et Pixel
-  const hasConsent = cookieDecision === "true"
 
   return (
     <SessionProvider session={pageProps.session}>
       <>
-        {/* 1) OneSignal SDK peut rester chargé ici si nécessaire */}
-
-        {/* 2) GA4 + Facebook Pixel — UNIQUEMENT si l’utilisateur a accepté */}
+        {/* 1) Scripts marketing (GA4 + FB Pixel) si l’utilisateur a accepté */}
         {hasConsent && (
           <>
             {/* Google Analytics 4 */}
@@ -69,16 +64,16 @@ export default function App({ Component, pageProps }) {
           </>
         )}
 
-        {/* Contenu de la page */}
+        {/* 2) Contenu principal */}
         <Component {...pageProps} />
 
-        {/* Bannière cookie avec mascotte */}
+        {/* 3) Bannière cookie avec mascotte */}
         <CookieBanner />
 
-        {/* Bouton WhatsApp — uniquement après décision cookie */}
-        {cookieDecision !== undefined && <WhatsappButton />}
+        {/* 4) Bouton WhatsApp — se positionne automatiquement */}
+        <WhatsappButton />
 
-        {/* Outil Vercel */}
+        {/* 5) Speed Insights (Vercel) */}
         <SpeedInsights />
       </>
     </SessionProvider>

@@ -5,7 +5,9 @@ import { useEffect, useState } from "react"
 export default function WhatsappButton() {
   const [visible, setVisible] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
+  const [bottomOffset, setBottomOffset] = useState(20)
 
+  // Manage visibility and tooltip timing
   useEffect(() => {
     const timeout = setTimeout(() => setVisible(true), 1000)
     const tooltipTimeout = setTimeout(() => setShowTooltip(true), 2000)
@@ -18,6 +20,28 @@ export default function WhatsappButton() {
     }
   }, [])
 
+  // Adjust bottom offset based on cookie banner presence
+  useEffect(() => {
+    const updateOffset = () => {
+      const banner = document.querySelector(".cookie-banner-container")
+      if (banner) {
+        const height = banner.offsetHeight
+        setBottomOffset(height + 20)
+      } else {
+        setBottomOffset(20)
+      }
+    }
+
+    updateOffset()
+    window.addEventListener("resize", updateOffset)
+    const observer = new MutationObserver(updateOffset)
+    observer.observe(document.body, { childList: true, subtree: true })
+    return () => {
+      window.removeEventListener("resize", updateOffset)
+      observer.disconnect()
+    }
+  }, [])
+
   return (
     <>
       <a
@@ -25,6 +49,7 @@ export default function WhatsappButton() {
         target="_blank"
         rel="noopener noreferrer"
         className={`whatsapp-button ${visible ? "visible" : ""}`}
+        style={{ bottom: `${bottomOffset}px` }}
       >
         <div className="icon">
           <FaWhatsapp size={22} />
@@ -44,7 +69,6 @@ export default function WhatsappButton() {
       <style jsx>{`
         .whatsapp-button {
           position: fixed;
-          bottom: 20px;
           right: 20px;
           z-index: 1000;
           background-color: #25d366;
@@ -59,7 +83,7 @@ export default function WhatsappButton() {
           text-decoration: none;
           opacity: 0;
           transform: translateY(20px);
-          transition: opacity 0.4s ease, transform 0.4s ease;
+          transition: opacity 0.4s ease, transform 0.4s ease, bottom 0.2s ease;
         }
 
         .whatsapp-button.visible {
@@ -90,7 +114,7 @@ export default function WhatsappButton() {
 
         .tooltip-bubble {
           position: fixed;
-          bottom: 76px;
+          bottom: calc(${bottomOffset}px + 56px);
           right: 20px;
           background: white;
           color: #333;

@@ -1,10 +1,11 @@
-import Image from "next/image";
-import CookieConsent from "react-cookie-consent";
+// components/CookieBanner.js
+import Image from "next/image"
+import CookieConsent from "react-cookie-consent"
 
 export default function CookieBanner() {
   return (
     <CookieConsent
-      location="bottom"
+      containerClasses="cookie-banner-container"
       buttonText="J'accepte"
       declineButtonText="Je refuse"
       enableDeclineButton
@@ -17,6 +18,7 @@ export default function CookieBanner() {
         boxShadow: "0 -2px 10px rgba(0,0,0,0.05)",
         fontFamily: "'Poppins', sans-serif",
         fontSize: "16px",
+        zIndex: 9999,
       }}
       buttonStyle={{
         background: "#22C55E",
@@ -59,5 +61,5 @@ export default function CookieBanner() {
         </div>
       </div>
     </CookieConsent>
-  );
+  )
 }
