@@ -8,19 +8,25 @@ import { useEffect, useState } from "react"
 import { Cookies } from "react-cookie-consent"
 
 export default function App({ Component, pageProps }) {
-  const [hasConsent, setHasConsent] = useState(false)
+  // undefined tant que la bannière n'a pas été cliquée, "true"/"false" après
+  const [cookieDecision, setCookieDecision] = useState(undefined)
 
   useEffect(() => {
-    const consent = Cookies.get("cookieConsent")
-    if (consent === "true") {
-      setHasConsent(true)
+    const consent = Cookies.get("cookieConsent") // "true" | "false" | undefined
+    if (consent !== undefined) {
+      setCookieDecision(consent)
     }
   }, [])
+
+  // hasConsent pour GA et Pixel
+  const hasConsent = cookieDecision === "true"
 
   return (
     <SessionProvider session={pageProps.session}>
       <>
-        {/* Scripts marketing (si consentement donné) */}
+        {/* 1) OneSignal SDK peut rester chargé ici si nécessaire */}
+
+        {/* 2) GA4 + Facebook Pixel — UNIQUEMENT si l’utilisateur a accepté */}
         {hasConsent && (
           <>
             {/* Google Analytics 4 */}
@@ -69,8 +75,8 @@ export default function App({ Component, pageProps }) {
         {/* Bannière cookie avec mascotte */}
         <CookieBanner />
 
-        {/* Bouton WhatsApp flottant */}
-        <WhatsappButton />
+        {/* Bouton WhatsApp — uniquement après décision cookie */}
+        {cookieDecision !== undefined && <WhatsappButton />}
 
         {/* Outil Vercel */}
         <SpeedInsights />
