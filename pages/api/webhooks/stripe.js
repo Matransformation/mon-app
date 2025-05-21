@@ -1,5 +1,3 @@
-// pages/api/webhooks/stripe.js
-
 import { buffer } from "micro";
 import Stripe from "stripe";
 import prisma from "../../../lib/prisma";
@@ -48,11 +46,11 @@ export default async function handler(req, res) {
     await prisma.user.update({
       where,
       data: {
-        stripeCustomerId: custId,             // on enregistre le customer
-        stripeSubscriptionId: sub.id,         // id de la sub
-        stripePriceId: priceId,               // price choisi
-        stripeStatus: sub.status,             // actif / canceled…
-        stripeCurrentPeriodEnd: periodEnd,    // fin de période
+        stripeCustomerId: custId,
+        stripeSubscriptionId: sub.id,
+        stripePriceId: priceId,
+        stripeStatus: sub.status,
+        stripeCurrentPeriodEnd: periodEnd,
         isSubscribed: sub.status === "active",
         cancelAtPeriodEnd: !!sub.cancel_at_period_end,
         trialEndsAt: null,
@@ -69,7 +67,7 @@ export default async function handler(req, res) {
         ].includes(priceId),
       },
     });
-    console.log(`✅ Utilisateur ${metadataUserId||custId} mis à jour pour sub ${sub.id}`);
+    console.log(`✅ Utilisateur ${metadataUserId || custId} mis à jour pour sub ${sub.id}`);
   }
 
   // 3️⃣ Switch sur le type d’événement
@@ -77,13 +75,12 @@ export default async function handler(req, res) {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object;
-        if (session.subscription && session.metadata?.userId) {
-          // 1) récupérer la souscription complète
-          const sub = await stripe.subscriptions.retrieve(session.subscription, {
-            expand: ["items.data.price"],
-          });
-          // 2) mettre à jour EN BLOCS : stripeCustomerId + stripeSubscriptionId + reste
-          await majUtilisateur(sub, session.metadata.userId);
+        if (session.subscription) {
+          const sub = await stripe.subscriptions.retrieve(
+            session.subscription,
+            { expand: ["items.data.price"] }
+          );
+          await majUtilisateur(sub, session.metadata?.userId);
         }
         break;
       }
@@ -91,7 +88,6 @@ export default async function handler(req, res) {
       case "customer.subscription.created":
       case "customer.subscription.updated": {
         const sub = event.data.object;
-        // ici metadata.userId n’existe plus, on passe undefined
         await majUtilisateur(sub, undefined);
         break;
       }
@@ -107,6 +103,23 @@ export default async function handler(req, res) {
           },
         });
         console.log(`ℹ️ Abonnement supprimé pour ${sub.id}`);
+        break;
+      }
+
+      case "invoice.payment_succeeded": {
+        const invoice = event.data.object;
+        if (invoice.subscription) {
+          const sub = await stripe.subscriptions.retrieve(
+            invoice.subscription,
+            { expand: ["items.data.price"] }
+          );
+          await majUtilisateur(sub, invoice.metadata?.userId);
+          console.log(
+            `✅ Facture payée, souscription ${sub.id} activée pour user ${
+              invoice.metadata?.userId || sub.customer
+            }`
+          );
+        }
         break;
       }
 
