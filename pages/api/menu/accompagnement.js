@@ -1,46 +1,32 @@
-import prisma from '../../../lib/prisma';
+// File: pages/api/menu/accompagnement.js
+import prisma from "../../../lib/prisma";
 
 export default async function handler(req, res) {
   if (req.method === "POST") {
-    const { repasId, accompagnements } = req.body;
+    const { repasId, ingredientId, quantity } = req.body;
 
-    if (!repasId || !Array.isArray(accompagnements)) {
+    console.log("🛠️ API reçue :", { repasId, ingredientId, quantity });
+
+    if (!repasId || !ingredientId || !quantity) {
       return res.status(400).json({ error: "Paramètres manquants" });
     }
 
-    // Supprimer les anciens accompagnements
-    await prisma.accompagnement.deleteMany({
-      where: { repasId },
-    });
-
-    // Ajouter les nouveaux
-    for (const a of accompagnements) {
-      await prisma.accompagnement.create({
+    try {
+      const created = await prisma.accompagnement.create({
         data: {
-          repas: { connect: { id: repasId } },
-          ingredient: { connect: { id: a.ingredientId } },
-          quantity: a.quantity,
+          menu: { connect: { id: repasId } }, // Assure-toi que repasId correspond bien au menu.id
+          ingredient: { connect: { id: ingredientId } },
+          quantity: parseInt(quantity, 10),
         },
       });
-    }
 
-    return res.status(200).json({ success: true });
+      return res.status(200).json(created);
+    } catch (error) {
+      console.error("❌ Erreur serveur API accompagnement :", error);
+      return res.status(500).json({ error: "Erreur serveur" });
+    }
   }
 
-  if (req.method === "DELETE") {
-    const { repasId } = req.query;
-
-    if (!repasId) {
-      return res.status(400).json({ error: "repasId manquant" });
-    }
-
-    await prisma.accompagnement.deleteMany({
-      where: { repasId: parseInt(repasId) },
-    });
-
-    return res.status(200).json({ success: true });
-  }
-
-  res.setHeader("Allow", ["POST", "DELETE"]);
+  res.setHeader("Allow", ["POST"]);
   res.status(405).end(`Méthode ${req.method} non autorisée`);
 }

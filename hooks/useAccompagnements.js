@@ -1,136 +1,141 @@
+// File: hooks/useAccompagnements.js
+import { useEffect, useState } from "react";
 import axios from "axios";
-import { computeRecipeAndSide, computeProteinOnlyQty } from "../utils/macros";
+import { computeProteinOnlyQty } from "../utils/macros";
 
-const repartitionRepas = {
-  "petit-dejeuner": 0.3,
-  dejeuner:         0.4,
-  collation:        0.05,
-  diner:            0.25,
-};
+/**
+ * Calcule la quantité à ajouter pour combler un déficit de glucides ou lipides.
+ */
+function computeOnlyQty(missing, per100g) {
+  if (!per100g || per100g <= 0) return 0;
+  return Math.floor((missing * 100) / per100g);
+}
 
-export default function useAccompagnements({
-  user,
-  allIngredients,
-  proteinRichOptions,
-  reload,
-}) {
-  /**
-   * Ajoute / remplace les accompagnements choisis pour un repas
-   * @param {object} repas   l’objet repas tel que renvoyé par l’API
-   * @param {object} choix   { DAIRY?, BREAKFAST_PROTEIN?, VEGETABLE_SIDE?, FRUIT_SIDE?, FAT? }
-   */
-  const applyAccompagnements = async (repas, choix = {}) => {
-    const existing = repas.accompagnements || [];
-    const toSend = [];
+export default function useAccompagnements({ user, reload }) {
+  const [allIngredients, setAllIngredients] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-    // 1) Conserver ceux qui ne sont pas remplacés
-    existing.forEach(a => {
-      const type = a.ingredient.sideTypes[0]?.sideType;
-      if (!choix[type]) {
-        toSend.push({ id: a.ingredient.id, quantity: a.quantity });
+  // ─── 1) Charger tous les ingrédients ───────────────────────────────
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await axios.get("/api/ingredients");
+        setAllIngredients(data || []);
+      } catch (err) {
+        console.error("Erreur chargement ingrédients :", err);
+      } finally {
+        setLoading(false);
       }
+    })();
+  }, []);
+
+  // ─── 2) Ajouter un accompagnement optimisé ───────────────────────────
+  const applyAccompagnements = async (repas, choix) => {
+    const [type] = Object.keys(choix);
+    const value  = choix[type];
+    const id     = typeof value === "object" ? value.id : value;
+
+    // récupérer l’ingrédient
+    const ing = allIngredients.find((i) => i.id === id);
+    if (!ing) {
+      console.error("Ingrédient introuvable :", id);
+      return;
+    }
+
+    // calculer les objectifs de ce repas
+    const repartition = {
+      "petit-dejeuner": 0.3,
+      dejeuner:         0.4,
+      collation:        0.05,
+      diner:            0.25,
+    };
+    const ratio  = repartition[repas.repasType] || 0;
+    const objP   = Math.round(user.poids * 1.8 * ratio);
+    const objF   = Math.round((user.metabolismeCible * 0.3 / 9) * ratio);
+    const objC   = Math.round(
+      ((user.metabolismeCible - user.poids * 1.8 * 4 - user.metabolismeCible * 0.3) / 4) * ratio
+    );
+
+    // calculer ce qui est déjà couvert
+    let gotP = 0, gotF = 0, gotC = 0;
+    (repas.recette?.ingredients || []).forEach((ri) => {
+      const f = ((ri.quantity || 0) * (repas.recipeFactor || 1)) / 100;
+      gotP += ri.ingredient.protein * f;
+      gotF += ri.ingredient.fat     * f;
+      gotC += ri.ingredient.carbs   * f;
+    });
+    (repas.accompagnements || []).forEach((a) => {
+      const f = (a.quantity || 0) / 100;
+      gotP += a.ingredient.protein * f;
+      gotF += a.ingredient.fat     * f;
+      gotC += a.ingredient.carbs   * f;
     });
 
-    // 2) Toujours DAIRY en 1er (100g)
-    if (choix.DAIRY) {
-      toSend.push({ id: choix.DAIRY, quantity: 100 });
+    const missP = Math.max(0, objP - gotP);
+    const missF = Math.max(0, objF - gotF);
+    const missC = Math.max(0, objC - gotC);
+
+    // déterminer la quantité à ajouter
+    let quantity = 0;
+    switch (type) {
+      case "DAIRY":
+      case "FRUIT_SIDE":
+        quantity = 100;
+        break;
+      case "VEGETABLE_SIDE":
+        quantity = 150;
+        break;
+      case "PROTEIN":
+      case "BREAKFAST_PROTEIN":
+        quantity = computeProteinOnlyQty(missP, {
+          protein: ing.protein,
+          fat:     ing.fat,
+          carbs:   ing.carbs,
+        });
+        break;
+      case "CARB":
+      case "CEREAL":
+        quantity = computeOnlyQty(missC, ing.carbs);
+        break;
+      case "FAT":
+        quantity = computeOnlyQty(missF, ing.fat);
+        break;
+      default:
+        quantity = 0;
     }
 
-    // 3) Calcul macros de base + DAIRY
-    const recetteIngredients = repas.recette?.ingredients || [];
-    const raw = recetteIngredients.reduce((sum, ri) => ({
-      p: sum.p + ri.ingredient.protein * ri.quantity / 100,
-      f: sum.f + ri.ingredient.fat     * ri.quantity / 100,
-      g: sum.g + ri.ingredient.carbs   * ri.quantity / 100,
-      c: sum.c + ri.ingredient.calories* ri.quantity / 100,
-    }), { p: 0, f: 0, g: 0, c: 0 });
-
-    const dairyMacro = toSend.reduce((sum, a) => {
-      const i = allIngredients.find(x => x.id === a.id) || {};
-      return {
-        p: sum.p + (i.protein || 0) * a.quantity / 100,
-        f: sum.f + (i.fat     || 0) * a.quantity / 100,
-        g: sum.g + (i.carbs   || 0) * a.quantity / 100,
-      };
-    }, { p: 0, f: 0, g: 0 });
-
-    // 4) Objectifs pour ce repas
-    const obj = {
-      p: user.poids * 1.8 * repartitionRepas[repas.repasType],
-      f: (user.metabolismeCible * 0.3 / 9) * repartitionRepas[repas.repasType],
-      g: ((user.metabolismeCible - user.poids * 1.8 * 4 - user.metabolismeCible * 0.3) / 4)
-         * repartitionRepas[repas.repasType],
-    };
-
-    // 5) Ajout de la protéine (BREAKFAST_PROTEIN) — prise en compte des œufs
-    if (choix.BREAKFAST_PROTEIN) {
-      const sideIng = proteinRichOptions.find(i => i.id === choix.BREAKFAST_PROTEIN);
-      if (sideIng) {
-        let qty = 0;
-
-        // Si c'est un œuf, on ajoute 50 g (1 œuf) ou multiples de 50 g
-        if (sideIng.name.toLowerCase().includes("oeuf")) {
-          qty = 50;
-        } else {
-          const scalable = repas.recette?.scalable !== false;
-          if (scalable) {
-            const { sideQty } = computeRecipeAndSide(
-              { p: raw.p + dairyMacro.p, f: raw.f + dairyMacro.f, g: raw.g + dairyMacro.g },
-              obj,
-              { protein: sideIng.protein, fat: sideIng.fat, carbs: sideIng.carbs }
-            );
-            qty = sideQty;
-          } else {
-            const afterP = raw.p + dairyMacro.p;
-            const manqueP = Math.max(0, obj.p - afterP);
-            qty = computeProteinOnlyQty(manqueP, sideIng);
-          }
-        }
-
-        // si l'ajustement dépasse 0, on l'ajoute
-        if (qty > 0) {
-          // pour les œufs, arrondir à la dizaine de 50 g
-          if (sideIng.name.toLowerCase().includes("oeuf")) {
-            qty = Math.ceil(qty / 50) * 50;
-          }
-          toSend.push({ id: sideIng.id, quantity: qty });
-        }
-      }
+    if (quantity <= 0) {
+      console.log(`💡 Rien à ajouter pour ${type} (quantité calculée = ${quantity})`);
+      return;
     }
 
-    // 6) Ajout des légumes, fruits et lipides si choisis
-    if (choix.VEGETABLE_SIDE) {
-      toSend.push({ id: choix.VEGETABLE_SIDE, quantity: 150 });
+    // envoyer à l’API
+    try {
+      await axios.post("/api/menu/accompagnement", {
+        repasId:      repas.id,
+        ingredientId: id,
+        quantity,
+      });
+      reload();
+    } catch (err) {
+      console.error("❌ Erreur ajout accompagnement :", err.response?.data || err.message);
     }
-    if (choix.FRUIT_SIDE) {
-      toSend.push({ id: choix.FRUIT_SIDE, quantity: 100 });
-    }
-    if (choix.FAT) {
-      toSend.push({ id: choix.FAT, quantity: 15 });
-    }
-
-    // 7) Envoi à l’API
-    const body = { accompagnements: toSend };
-    if (repas.recette?.id) {
-      body.recetteId = repas.recette.id;
-    }
-    await axios.put(`/api/menu/repas/${repas.id}`, body);
-
-    // 8) Reload du menu
-    await reload();
   };
 
-  /**
-   * Enlève tous les accompagnements pour un repas
-   */
-  const removeAccompagnements = async (repas) => {
-    const body = { accompagnements: [] };
-    if (repas.recette?.id) {
-      body.recetteId = repas.recette.id;
+  // ─── 3) Supprimer un accompagnement ─────────────────────────────────
+  const removeAccompagnements = async (repas, ingredientId) => {
+    try {
+      await axios.delete(`/api/menu/repas/${repas.id}/accompagnements/${ingredientId}`);
+      reload();
+    } catch (err) {
+      console.error("Erreur suppression accompagnement :", err);
     }
-    await axios.put(`/api/menu/repas/${repas.id}`, body);
-    await reload();
   };
 
-  return { applyAccompagnements, removeAccompagnements };
+  return {
+    loading,
+    allIngredients,
+    applyAccompagnements,
+    removeAccompagnements,
+  };
 }
