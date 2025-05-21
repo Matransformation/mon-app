@@ -28,9 +28,7 @@ export default async function handler(req, res) {
     const hashed = await hashPassword(password)
     const trialEndsAt = addDays(new Date(), 7) // Période d'essai de 7 jours
 
-    // Log pour débogage de trialEndsAt
-    console.log("trialEndsAt:", trialEndsAt.toISOString()) // Log pour vérifier la date
-
+    // Création de l'utilisateur
     const user = await prisma.user.create({
       data: {
         name,
@@ -39,43 +37,65 @@ export default async function handler(req, res) {
         phone,
         birthdate: new Date(birthdate),
         sexe: gender,
-        trialEndsAt, // Assurer que cette date est correctement définie
-        isSubscribed: false, // Par défaut, l'utilisateur n'est pas abonné
+        trialEndsAt,
+        isSubscribed: false,
       }
     })
 
-    // Log pour vérifier que l'utilisateur a bien été créé et que trialEndsAt est bien défini
-    console.log("User Created:", user)
-
-    // 3) Générer un code de vérification (6 chiffres ou lettres)
+    // 3) Générer un code de vérification (6 caractères hexadécimaux)
     const token = randomBytes(3).toString('hex').toUpperCase()
     const expiresAt = addHours(new Date(), 1)
 
-    // Supprimer d'anciens tokens
+    // Supprimer les anciens tokens et créer le nouveau
     await prisma.emailVerificationToken.deleteMany({ where: { userId: user.id } })
-
-    // Créer le token en base
     await prisma.emailVerificationToken.create({
       data: { userId: user.id, token, expiresAt }
     })
 
-    // 4) Envoyer le mail de vérification
+    // 4) Préparer et envoyer le mail de vérification
     const verificationUrl = `${process.env.NEXTAUTH_URL}/verify-email?email=${encodeURIComponent(email)}`
+
+    const text = `
+Bonjour ${name},
+
+Voici votre code de vérification : ${token}
+
+Il expire dans 1 heure.
+
+Si vous n’avez pas demandé cette inscription, ignorez ce message.
+
+Accédez à la page de vérification ici : ${verificationUrl}
+
+Cordialement,
+L'équipe Ma Transformation
+`
+
     const html = `
       <p>Bonjour ${name},</p>
       <p>Voici votre code de vérification : <strong>${token}</strong></p>
       <p>Il expire dans 1 heure.</p>
       <p>Si vous n’avez pas demandé cette inscription, ignorez ce message.</p>
       <p><a href="${verificationUrl}">Cliquez ici</a> pour ouvrir la page de vérification.</p>
+      <hr/>
+      <p>
+        Ma Transformation<br/>
+        10 rue Jules Védrines, 64600 Anglet<br/>
+        Contact : <a href="mailto:${process.env.EMAIL_FROM}">${process.env.EMAIL_FROM}</a>
+      </p>
     `
+
     await sgMail.send({
       to: email,
-      from: process.env.EMAIL_FROM,
-      subject: '📩 Vérifiez votre adresse email',
+      from: {
+        email: process.env.EMAIL_FROM,
+        name: 'Ma Transformation'
+      },
+      subject: 'Confirmation de votre adresse email sur Ma Transformation',
+      text,
       html
     })
 
-    // 5) Succès
+    // 5) Réponse succès
     return res.status(201).json({ message: 'Utilisateur créé. Un email de vérification a été envoyé.' })
   } catch (err) {
     console.error('Signup error:', err)

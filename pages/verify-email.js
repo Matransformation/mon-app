@@ -67,7 +67,7 @@ export default function VerifyEmailPage() {
             Saisis le code unique que nous avons envoyé à
           </h2>
           <p className="text-orange-500 font-semibold mb-8">
-            {email || 'votre email'}
+            {email || 'votre email (il se peut que notre message arrive dans vos spams)'}
           </p>
 
           {error && <p className="text-red-600 mb-4">{error}</p>}
@@ -107,17 +107,15 @@ export default function VerifyEmailPage() {
         <div className="hidden md:flex w-full md:w-1/2 bg-[#FE8C15]/10 p-8 lg:p-16 items-center">
           <div>
             <h2 className="text-4xl font-bold text-[#FE8C15] mb-6">
-              À partir d'aujourd'hui, tu offriras la meilleure expérience de
-              coaching à tes clients.
+              À partir d'aujourd'hui, tu n'as plus d'excuse de ne pas y arriver !
             </h2>
             <ul className="space-y-3 mb-8 text-gray-800">
               {[
-                '14 jours pour essayer MaTransformation gratuitement',
-                "Le logiciel le plus facile à utiliser pour tes clients",
+                '7 jours pour essayer MaTransformation gratuitement',
+                "Des menus adaptés à tes besoins",
                 "Aucune carte de crédit n'est nécessaire",
                 "L'équipe d'assistance est à ta disposition tous les jours",
-                "100+ vidéos tutoriels pour t'aider à utiliser MaTransformation",
-                "Rejoins des milliers de coachs personnels sur MaTransformation",
+                
               ].map((txt, i) => (
                 <li key={i} className="flex items-start">
                   <svg
@@ -133,7 +131,7 @@ export default function VerifyEmailPage() {
               ))}
             </ul>
             <img
-              src="/menu-matransformation.png"
+              src="/essai.png"
               alt="Mascotte cœur"
               className="mx-auto mt-4 w-40 h-40 object-contain"
             />

@@ -24,6 +24,9 @@ export default function MonCompte({ user }) {
     setRenewalDate(user.subscriptionEnd);
     setIsSubscribed(user.isSubscribed);
     setStripeStatus(user.stripeStatus);
+    setCancelAtPeriodEnd(user.cancelAtPeriodEnd);
+    setIsSubscribed(user.isSubscribed);
+
 
     // Libellé de l'abonnement
     const { stripePriceId } = user;
