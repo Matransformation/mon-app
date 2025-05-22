@@ -19,8 +19,11 @@ export default function useMenu() {
     setLoading(true);
     try {
       const [menuRes, userRes] = await Promise.all([
-        axios.get(`/api/menu/${session.user.id}`),
-        axios.get(`/api/utilisateur/${session.user.id}`),
+        axios.get(
+          `/api/menu/${session.user.id}`,
+          { params: { weekStart: weekStart.toISOString() } }
+        ),
+                axios.get(`/api/utilisateur/${session.user.id}`),
       ]);
       setMenu(menuRes.data);
       setUser(userRes.data);

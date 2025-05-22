@@ -47,6 +47,7 @@ export default async function handler(req, res) {
       data: {
         stripeStatus: sub.status,
         subscriptionEnd: new Date(nextPeriodEnd),
+        cancelAtPeriodEnd: sub.cancel_at_period_end,
         // isSubscribed reste true tant que period_end n'est pas atteint
       },
     });
