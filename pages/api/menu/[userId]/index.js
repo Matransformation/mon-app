@@ -1,11 +1,12 @@
 import prisma from "../../../../lib/prisma";
 import { startOfWeek } from 'date-fns';
+import fetch from 'node-fetch'; // ou global.fetch selon ta config
 
 export default async function handler(req, res) {
   const { userId } = req.query;
-  const uid = userId; // UUID string
+  const uid = userId;
 
-  // Parse weekStart from query or default to current week
+  // Calcul de la semaine
   const weekStart = req.query.weekStart
     ? new Date(req.query.weekStart)
     : startOfWeek(new Date(), { weekStartsOn: 1 });
@@ -14,66 +15,46 @@ export default async function handler(req, res) {
 
   if (req.method === "GET") {
     try {
-      console.log('Fetching menu for user', uid, 'from', weekStart.toISOString(), 'to', weekEnd.toISOString());
+      // 1) Récupérer les menus existants
       let menu = await prisma.menuJournalier.findMany({
         where: { userId: uid, date: { gte: weekStart, lt: weekEnd } },
-        include: {
-          recette: {
-            include: {
-              ingredients: { include: { ingredient: { include: { sideTypes: true } } } },
-              allowedSides: { select: { sideType: true } },
-            },
-          },
-          accompagnements: { include: { ingredient: { include: { sideTypes: true } } } },
-        },
+        include: { /* tes includes */ },
       });
-      console.log('Menus found:', menu.length);
 
-      if (menu.length === 0) {
-        // Determine a default recetteId
-        const defaultRecette = await prisma.recette.findFirst();
-        if (!defaultRecette) {
-          console.error('No default recette found.');
-          return res.status(500).json({ message: 'Aucune recette disponible' });
+      // 2) S’il manque des jours, appeler ton générateur
+      if (menu.length < 7) {
+        console.log(`Seuls ${menu.length} jours trouvés, on génère la semaine via /api/menu/generer`);
+        const genRes = await fetch(
+          `${process.env.NEXT_PUBLIC_URL}/api/menu/generer`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: uid,
+              weekStart: weekStart.toISOString(),
+            }),
+          }
+        );
+        if (!genRes.ok) {
+          const err = await genRes.json();
+          console.error('Erreur génération auto:', err);
+          return res.status(500).json({ message: 'Échec génération menus', detail: err });
         }
-        const jours = Array.from({ length: 7 }).map((_, i) => ({
-          userId: uid,
-          date: new Date(weekStart.getTime() + i * 24 * 60 * 60 * 1000),
-          recetteId: defaultRecette.id,
-          repasType: 'standard',
-        }));
-        console.log('Generating entries:', jours);
-
-        // Bulk create entries, ignoring duplicates
-        await prisma.menuJournalier.createMany({
-          data: jours,
-          skipDuplicates: true,
-        });
-        console.log('createMany with skipDuplicates OK');
-
-        // Re-fetch after generation
+        // 3) Re-fetch après génération
         menu = await prisma.menuJournalier.findMany({
           where: { userId: uid, date: { gte: weekStart, lt: weekEnd } },
-          include: {
-            recette: {
-              include: {
-                ingredients: { include: { ingredient: { include: { sideTypes: true } } } },
-                allowedSides: { select: { sideType: true } },
-              },
-            },
-            accompagnements: { include: { ingredient: { include: { sideTypes: true } } } },
-          },
+          include: { /* tes includes */ },
         });
-        console.log('Menus after generation:', menu.length);
       }
 
+      // 4) Retourner
       return res.status(200).json(menu);
     } catch (err) {
-      console.error("GET /api/menu/[userId] error:", err);
-      return res.status(500).json({ message: "Erreur serveur", error: err.message });
+      console.error('GET /api/menu/[userId] error:', err);
+      return res.status(500).json({ message: 'Erreur serveur', error: err.message });
     }
   }
 
-  res.setHeader("Allow", ["GET"]);
+  res.setHeader('Allow', ['GET']);
   return res.status(405).end(`Méthode ${req.method} non autorisée`);
 }
