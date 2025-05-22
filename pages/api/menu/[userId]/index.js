@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   if (req.method === "GET") {
     try {
       // Retrieve menus for the specified week range
-      const menu = await prisma.menuJournalier.findMany({
+      let menu = await prisma.menuJournalier.findMany({
         where: {
           userId,
           date: {
@@ -40,6 +40,37 @@ export default async function handler(req, res) {
           },
         },
       });
+
+      // If no menus exist for this week, generate default entries
+      if (menu.length === 0) {
+        const jours = Array.from({ length: 7 }).map((_, i) => ({
+          userId,
+          date: new Date(weekStart.getTime() + i * 24 * 60 * 60 * 1000),
+          // You can set a default recetteId or leave null
+        }));
+        // Create entries
+        await prisma.menuJournalier.createMany({
+          data: jours,
+          skipDuplicates: true,
+        });
+        // Re-fetch with includes
+        menu = await prisma.menuJournalier.findMany({
+          where: {
+            userId,
+            date: { gte: weekStart, lt: weekEnd },
+          },
+          include: {
+            recette: {
+              include: {
+                ingredients: { include: { ingredient: { include: { sideTypes: true } } } },
+                allowedSides: { select: { sideType: true } },
+              },
+            },
+            accompagnements: { include: { ingredient: { include: { sideTypes: true } } } },
+          },
+        });
+      }
+
       return res.status(200).json(menu);
     } catch (err) {
       console.error("GET /api/menu/[userId] :", err);
