@@ -8,13 +8,11 @@ export default async function handler(req, res) {
 
   if (req.method !== "GET") {
     res.setHeader("Allow", ["GET"]);
-    return res
-      .status(405)
-      .end(`Méthode ${req.method} non autorisée`);
+    return res.status(405).end(`Méthode ${req.method} non autorisée`);
   }
 
   try {
-    // 1️⃣ Détermination de la semaine ciblée
+    // 1️⃣ Calcul du début et de la fin de la semaine
     const weekStart = req.query.weekStart
       ? new Date(req.query.weekStart)
       : startOfWeek(new Date(), { weekStartsOn: 1 });
@@ -25,7 +23,7 @@ export default async function handler(req, res) {
       `Fetching menu for user ${userId} from ${weekStart.toISOString()} to ${weekEnd.toISOString()}`
     );
 
-    // 2️⃣ Lecture des menus existants
+    // 2️⃣ On récupère ce qui existe déjà
     let menu = await prisma.menuJournalier.findMany({
       where: {
         userId,
@@ -47,11 +45,11 @@ export default async function handler(req, res) {
     });
     console.log(`Menus found: ${menu.length}`);
 
-    // 3️⃣ S’il manque des jours, on appelle l’API de génération
+    // 3️⃣ S’il manque des jours, on génère
     if (menu.length < 7) {
       console.log(`Only ${menu.length} day(s) found, generating missing days…`);
 
-      // Reconstruire l’URL de base (compatible Vercel)
+      // 🔧 Détection dynamique du protocole (http en local, https sur Vercel)
       const proto = (req.headers["x-forwarded-proto"] || "http").split(",")[0];
       const host = req.headers.host;
       const baseUrl = `${proto}://${host}`;
@@ -66,15 +64,15 @@ export default async function handler(req, res) {
       });
 
       if (!genRes.ok) {
-        const err = await genRes.json().catch(() => ({}));
-        console.error("❌ Erreur génération auto:", err);
+        const errBody = await genRes.json().catch(() => ({}));
+        console.error("❌ Erreur génération auto:", errBody);
         return res
           .status(500)
-          .json({ message: "Échec génération menus", detail: err });
+          .json({ message: "Échec génération menus", detail: errBody });
       }
 
       console.log("✅ Génération OK, re-fetching menu…");
-      // 4️⃣ Relire les entrées
+      // 4️⃣ On relit les entrées
       menu = await prisma.menuJournalier.findMany({
         where: {
           userId,
@@ -97,7 +95,7 @@ export default async function handler(req, res) {
       console.log(`Menus after generation: ${menu.length}`);
     }
 
-    // 5️⃣ On renvoie la semaine complète
+    // 5️⃣ Retour de la semaine complète
     return res.status(200).json(menu);
   } catch (err) {
     console.error("GET /api/menu/[userId] error:", err);

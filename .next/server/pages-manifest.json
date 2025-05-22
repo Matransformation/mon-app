@@ -3,5 +3,9 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/menu": "pages/menu.js",
-  "/api/menu/[userId]": "pages/api/menu/[userId].js"
+  "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
+  "/api/menu/[userId]": "pages/api/menu/[userId].js",
+  "/api/menu/generer": "pages/api/menu/generer.js",
+  "/api/utilisateur/[id]": "pages/api/utilisateur/[id].js",
+  "/api/ingredients": "pages/api/ingredients.js"
 }
