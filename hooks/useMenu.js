@@ -1,4 +1,3 @@
-// hooks/useMenu.js
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import axios from "axios";
@@ -6,12 +5,12 @@ import { addWeeks, subWeeks, startOfWeek } from "date-fns";
 
 export default function useMenu() {
   const { data: session, status } = useSession();
-  const [menu, setMenu]         = useState([]);
-  const [user, setUser]         = useState(null);
+  const [menu, setMenu] = useState([]);               // <-- expose setMenu
+  const [user, setUser] = useState(null);
   const [weekStart, setWeekStart] = useState(
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
-  const [loading, setLoading]   = useState(false);
+  const [loading, setLoading] = useState(false);
 
   // Charge menu + utilisateur
   const loadData = async () => {
@@ -19,11 +18,10 @@ export default function useMenu() {
     setLoading(true);
     try {
       const [menuRes, userRes] = await Promise.all([
-        axios.get(
-          `/api/menu/${session.user.id}`,
-          { params: { weekStart: weekStart.toISOString() } }
-        ),
-                axios.get(`/api/utilisateur/${session.user.id}`),
+        axios.get(`/api/menu/${session.user.id}`, {
+          params: { weekStart: weekStart.toISOString() },
+        }),
+        axios.get(`/api/utilisateur/${session.user.id}`),
       ]);
       setMenu(menuRes.data);
       setUser(userRes.data);
@@ -34,18 +32,16 @@ export default function useMenu() {
     }
   };
 
-  // À chaque changement de semaine ou de session, on recharge
   useEffect(() => {
     loadData();
   }, [status, session, weekStart]);
 
-  // Fonctions de navigation
   const prevWeek = () => setWeekStart(ws => subWeeks(ws, 1));
   const nextWeek = () => setWeekStart(ws => addWeeks(ws, 1));
 
-  // Expose tout ce dont la page aura besoin
   return {
     menu,
+    setMenu,          // <-- on expose setMenu ici
     user,
     weekStart,
     prevWeek,

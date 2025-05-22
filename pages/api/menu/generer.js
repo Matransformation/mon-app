@@ -1,12 +1,9 @@
-// pages/api/menu/generer.js
 import { generateWeeklyMenu } from "../../../lib/menuGenerator";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
-    return res
-      .status(405)
-      .json({ message: `Méthode ${req.method} non autorisée` });
+    return res.status(405).json({ message: `Méthode ${req.method} non autorisée` });
   }
 
   const { userId, weekStart } = req.body;
@@ -16,13 +13,12 @@ export default async function handler(req, res) {
 
   try {
     await generateWeeklyMenu(userId, weekStart);
-    return res
-      .status(200)
-      .json({ message: "Menu généré avec règles appliquées." });
+    return res.status(200).json({ message: "Menu généré avec règles appliquées." });
   } catch (err) {
     console.error("Erreur génération menu :", err);
-    return res
-      .status(500)
-      .json({ message: "Erreur serveur lors de la génération", detail: err.message });
+    return res.status(500).json({
+      message: "Erreur serveur lors de la génération",
+      detail: err.message,
+    });
   }
 }
