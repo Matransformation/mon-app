@@ -24,13 +24,12 @@ export default async function handler(req, res) {
       return res.status(404).json({ message: "Utilisateur non trouvé." });
     }
 
-    // 2) Calculer début et fin de la semaine :
-    //    si weekStartIso est passé, on l'utilise, sinon on prend today.
+    // 2) Calculer début et fin de la semaine
     const baseDate = weekStartIso ? new Date(weekStartIso) : new Date();
     const weekStart = startOfWeek(baseDate, { weekStartsOn: 1 });
     const weekEnd   = endOfWeek(weekStart,  { weekStartsOn: 1 });
 
-    // 3) Récupérer les menus existants pour pouvoir supprimer leurs accompagnements
+    // 3) Récupérer les menus existants pour cette semaine
     const toRemove = await prisma.menuJournalier.findMany({
       where: {
         userId,
@@ -38,24 +37,17 @@ export default async function handler(req, res) {
       },
       select: { id: true },
     });
-    const menuIds = toRemove.map((m) => m.id);
+    const menuIds = toRemove.map(m => m.id);
 
-    // 4) Supprimer d’abord tous les accompagnements liés
-    if (menuIds.length) {
-      await prisma.accompagnement.deleteMany({
-        where: { menuId: { in: menuIds } },
-      });
-    }
+    // 4+5) En transaction : supprimer d'abord les accompagnements, puis les menus
+    await prisma.$transaction([
+      prisma.accompagnement.deleteMany({ where: { menuId: { in: menuIds } } }),
+      prisma.menuJournalier.deleteMany({
+        where: { userId, date: { gte: weekStart, lte: weekEnd } }
+      }),
+    ]);
 
-    // 5) Puis supprimer les menus eux‑mêmes
-    await prisma.menuJournalier.deleteMany({
-      where: {
-        userId,
-        date: { gte: weekStart, lte: weekEnd },
-      },
-    });
-
-    // 6) Préparer la génération
+    // 6) Préparer la génération de 7 jours
     const repartition = {
       "petit-dejeuner": 0.3,
       dejeuner:         0.4,
@@ -63,142 +55,98 @@ export default async function handler(req, res) {
       diner:            0.25,
     };
 
-    // 7) Charger toutes les recettes + ingrédients + sideTypes + allowedSides
-    const recettes = await prisma.recette.findMany({
-      include: {
-        categories: { include: { category: true } },
-        ingredients: {
-          include: { ingredient: { include: { sideTypes: true } } },
+    // 7) Charger recettes + ingrédients
+    const [recettes, ingredients] = await Promise.all([
+      prisma.recette.findMany({
+        include: {
+          categories: { include: { category: true } },
+          ingredients: { include: { ingredient: { include: { sideTypes: true } } } },
+          allowedSides: true,
         },
-        allowedSides: true,
-      },
-    });
+      }),
+      prisma.ingredient.findMany({ include: { sideTypes: true } }),
+    ]);
 
-    // 8) Charger tous les ingrédients (pour collation)
-    const ingredients = await prisma.ingredient.findMany({
-      include: { sideTypes: true },
-    });
-
-    // 9) Construire les créations
+    // 8) Construire les créations pour chaque jour et chaque type
     const creations = [];
     for (let i = 0; i < 7; i++) {
       const day = addDays(weekStart, i);
 
       for (const type of Object.keys(repartition)) {
-        // base des données à créer
         const data = {
           user:      { connect: { id: userId } },
           date:      day,
           repasType: type,
         };
 
-        // 9.1) Choix de la recette (sauf collation)
+        // 8.1 Sélection de la recette (sauf collation)
         let recette = null;
         if (type !== "collation") {
-          const pool = recettes.filter((r) => {
-            const cats = r.categories.map((c) =>
-              c.category.name.toLowerCase()
-            );
-            if (type === "petit-dejeuner") {
-              return cats.includes("petit déjeuner");
-            } else {
-              return (
-                !cats.includes("petit déjeuner") &&
-                !cats.includes("collation")
-              );
-            }
+          const pool = recettes.filter(r => {
+            const cats = r.categories.map(c => c.category.name.toLowerCase());
+            return type === "petit-dejeuner"
+              ? cats.includes("petit déjeuner")
+              : !cats.includes("petit déjeuner") && !cats.includes("collation");
           });
-          if (pool.length) {
-            recette = pool[Math.floor(Math.random() * pool.length)];
-          }
+          recette = pool.length && pool[Math.floor(Math.random() * pool.length)];
         }
 
-        // 9.2) Si on a une recette, on applique scalabilité + clamp DAIRY + connect
+        // 8.2 Si recette trouvée → ajuster quantités & connecter
         if (recette) {
-          const hasEgg = recette.ingredients.some((ri) =>
+          const hasEgg = recette.ingredients.some(ri =>
             ri.ingredient.name.toLowerCase().includes("oeuf")
           );
-
           if (!hasEgg) {
-            // calcul des totaux
+            // calcul macros totaux
             const totals = recette.ingredients.reduce(
               (s, ri) => ({
-                p: s.p + (ri.ingredient.protein * ri.quantity) / 100,
-                f: s.f + (ri.ingredient.fat     * ri.quantity) / 100,
-                g: s.g + (ri.ingredient.carbs   * ri.quantity) / 100,
+                p: s.p + ri.ingredient.protein * ri.quantity / 100,
+                f: s.f + ri.ingredient.fat     * ri.quantity / 100,
+                g: s.g + ri.ingredient.carbs   * ri.quantity / 100,
               }),
               { p: 0, f: 0, g: 0 }
             );
-            // objectifs
+            // objectifs macros
             const target = {
               p: user.poids * 1.8 * repartition[type],
-              f: ((user.metabolismeCible * 0.3) / 9) * repartition[type],
-              g:
-                ((user.metabolismeCible -
-                  user.poids * 1.8 * 4 -
-                  user.metabolismeCible * 0.3) /
-                  4) *
-                repartition[type],
+              f: (user.metabolismeCible * 0.3 / 9) * repartition[type],
+              g: ((user.metabolismeCible - user.poids * 1.8 * 4 - user.metabolismeCible * 0.3) / 4) * repartition[type],
             };
             // facteur minimal
-            let factor = Math.min(
-              target.p / totals.p,
-              target.f / totals.f,
-              target.g / totals.g
-            );
-            // clamp DAIRY à 150g
-            recette.ingredients.forEach((ri) => {
-              const isDairy = ri.ingredient.sideTypes.some(
-                (st) => st.sideType === "DAIRY"
-              );
-              if (isDairy && ri.quantity * factor > 150) {
+            let factor = Math.min(target.p / totals.p, target.f / totals.f, target.g / totals.g);
+            // clamp DAIRY
+            recette.ingredients.forEach(ri => {
+              if (ri.ingredient.sideTypes.some(st => st.sideType === "DAIRY") && ri.quantity * factor > 150) {
                 factor = Math.min(factor, 150 / ri.quantity);
               }
             });
-            // appliquer le facteur
-            recette.ingredients = recette.ingredients.map((ri) => ({
+            // ajuster quantités
+            recette.ingredients = recette.ingredients.map(ri => ({
               ...ri,
               quantity: Math.round(ri.quantity * factor),
             }));
           }
-
           data.recette = { connect: { id: recette.id } };
         }
-
-        // 9.3) Si c’est une collation, on ajoute un accompagnement auto
+        // 8.3 Sinon, si collation → créer un accompagnement
         else if (type === "collation") {
-          const pool = ingredients.filter(
-            (i) =>
-              i.protein >= 10 &&
-              i.sideTypes.some((st) =>
-                ["PROTEIN", "DAIRY"].includes(st.sideType)
-              )
+          const pool = ingredients.filter(i =>
+            i.protein >= 10 && i.sideTypes.some(st => ["PROTEIN","DAIRY"].includes(st.sideType))
           );
           if (pool.length) {
             const ing = pool[Math.floor(Math.random() * pool.length)];
-            const qty = Math.min(
-              150,
-              Math.round(
-                (user.poids * 1.8 * repartition[type]) / (ing.protein / 100)
-              )
-            );
+            const qty = Math.min(150, Math.round(user.poids * 1.8 * repartition[type] / (ing.protein/100)));
             data.accompagnements = {
-              create: [
-                {
-                  ingredient: { connect: { id: ing.id } },
-                  quantity: qty,
-                },
-              ],
+              create: [{ ingredient: { connect: { id: ing.id } }, quantity: qty }],
             };
           }
         }
 
-        // on ajoute la création à la liste
         creations.push(prisma.menuJournalier.create({ data }));
       }
     }
 
-    // 10) Lancer les créations en parallèle
+    // 9) Exécuter toutes les insertions
     await Promise.all(creations);
 
     return res
@@ -208,6 +156,6 @@ export default async function handler(req, res) {
     console.error("Erreur génération menu :", err);
     return res
       .status(500)
-      .json({ message: "Erreur serveur lors de la génération" });
+      .json({ message: "Erreur serveur lors de la génération", detail: err.message });
   }
 }
