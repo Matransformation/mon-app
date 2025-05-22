@@ -3,6 +3,12 @@ import { startOfWeek } from 'date-fns';
 
 export default async function handler(req, res) {
   const { userId } = req.query;
+  // Ensure userId is an integer
+  const uid = parseInt(userId, 10);
+  if (isNaN(uid)) {
+    return res.status(400).json({ message: 'userId invalide' });
+  }
+
   // Parse weekStart from query or default to current week
   const weekStart = req.query.weekStart
     ? new Date(req.query.weekStart)
@@ -16,7 +22,7 @@ export default async function handler(req, res) {
       // Retrieve menus for the specified week range
       let menu = await prisma.menuJournalier.findMany({
         where: {
-          userId,
+          userId: uid,
           date: {
             gte: weekStart,
             lt: weekEnd,
@@ -43,12 +49,13 @@ export default async function handler(req, res) {
 
       // If no menus exist for this week, generate default entries
       if (menu.length === 0) {
+        // Create one entry per day
         const jours = Array.from({ length: 7 }).map((_, i) => ({
-          userId,
+          userId: uid,
           date: new Date(weekStart.getTime() + i * 24 * 60 * 60 * 1000),
-          // You can set a default recetteId or leave null
+          // TODO: set default recetteId if needed
         }));
-        // Create entries
+        // Bulk create entries
         await prisma.menuJournalier.createMany({
           data: jours,
           skipDuplicates: true,
@@ -56,7 +63,7 @@ export default async function handler(req, res) {
         // Re-fetch with includes
         menu = await prisma.menuJournalier.findMany({
           where: {
-            userId,
+            userId: uid,
             date: { gte: weekStart, lt: weekEnd },
           },
           include: {
