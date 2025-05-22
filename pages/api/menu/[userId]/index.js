@@ -1,6 +1,6 @@
 // pages/api/menu/[userId]/index.js
 
-import prisma from "../../../../../lib/prisma";
+import prisma from "../../../../lib/prisma";
 import { startOfWeek } from "date-fns";
 
 export default async function handler(req, res) {
