@@ -3,7 +3,7 @@ import { startOfWeek } from 'date-fns';
 
 export default async function handler(req, res) {
   const { userId } = req.query;
-  const uid = userId;
+  const uid = userId; // UUID string
 
   // Parse weekStart from query or default to current week
   const weekStart = req.query.weekStart
@@ -43,12 +43,14 @@ export default async function handler(req, res) {
           repasType: 'standard',
         }));
         console.log('Generating entries:', jours);
-        try {
-          await prisma.menuJournalier.createMany({ data: jours });
-          console.log('createMany successful');
-        } catch (createErr) {
-          console.error('createMany error:', createErr);
-        }
+
+        // Bulk create entries, ignoring duplicates
+        await prisma.menuJournalier.createMany({
+          data: jours,
+          skipDuplicates: true,
+        });
+        console.log('createMany with skipDuplicates OK');
+
         // Re-fetch after generation
         menu = await prisma.menuJournalier.findMany({
           where: { userId: uid, date: { gte: weekStart, lt: weekEnd } },
