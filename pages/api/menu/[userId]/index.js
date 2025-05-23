@@ -2,7 +2,6 @@
 
 import prisma from "../../../../lib/prisma";
 import { startOfWeek } from "date-fns";
-import { generateWeeklyMenu } from "../../../../lib/menuGenerator";
 
 export default async function handler(req, res) {
   const { userId } = req.query;
@@ -11,22 +10,72 @@ export default async function handler(req, res) {
     res.setHeader("Allow", ["GET"]);
     return res
       .status(405)
-      .send(`Méthode ${req.method} non autorisée`);
+      .end(`Méthode ${req.method} non autorisée`);
   }
 
-  // 1️⃣ Calcul de weekStart / weekEnd
+  // ① Désactiver le cache pour toujours exécuter la logique
+  res.setHeader("Cache-Control", "no-store");
+
+  // ② Calcul de la semaine ciblée
   const weekStart = req.query.weekStart
     ? new Date(req.query.weekStart)
     : startOfWeek(new Date(), { weekStartsOn: 1 });
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 7);
 
-  // 2️⃣ Toujours désactiver le cache pour ce endpoint
-  res.setHeader("Cache-Control", "no-store");
+  console.log(
+    `Fetching menu for user ${userId} from ${weekStart.toISOString()} to ${weekEnd.toISOString()}`
+  );
 
-  try {
-    // 3️⃣ Récupérer ce qui existe déjà
-    let menu = await prisma.menuJournalier.findMany({
+  // ③ Récupérer ce qui existe
+  let menu = await prisma.menuJournalier.findMany({
+    where: {
+      userId,
+      date: { gte: weekStart, lt: weekEnd },
+    },
+    include: {
+      recette: {
+        include: {
+          ingredients: {
+            include: { ingredient: { include: { sideTypes: true } } },
+          },
+          allowedSides: { select: { sideType: true } },
+        },
+      },
+      accompagnements: {
+        include: { ingredient: { include: { sideTypes: true } } },
+      },
+    },
+  });
+  console.log(`Menus found: ${menu.length}`);
+
+  // ④ Si ***aucun*** jour n’existe, on génère puis on relit
+  if (menu.length === 0) {
+    console.log(`Aucun menu trouvé pour ${userId}, génération auto…`);
+
+    // Appel à ton endpoint de génération
+    const proto = (req.headers["x-forwarded-proto"] || "http").split(",")[0];
+    const host = req.headers.host;
+    const baseUrl = `${proto}://${host}`;
+
+    const genRes = await fetch(`${baseUrl}/api/menu/generer`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId,
+        weekStart: weekStart.toISOString(),
+      }),
+    });
+    if (!genRes.ok) {
+      const err = await genRes.json().catch(() => ({}));
+      console.error("❌ Échec génération auto:", err);
+      return res
+        .status(500)
+        .json({ message: "Erreur génération auto", detail: err });
+    }
+
+    // ⑤ Relire les menus fraîchement créés
+    menu = await prisma.menuJournalier.findMany({
       where: {
         userId,
         date: { gte: weekStart, lt: weekEnd },
@@ -45,41 +94,9 @@ export default async function handler(req, res) {
         },
       },
     });
-
-    // 4️⃣ Si **aucun** menu pour toute la semaine, on génère
-    if (menu.length === 0) {
-      console.log(`Aucun menu pour ${userId} du ${weekStart.toISOString()}, génération…`);
-      await generateWeeklyMenu(userId, weekStart.toISOString());
-
-      //  ➡️ Re-fetch après génération
-      menu = await prisma.menuJournalier.findMany({
-        where: {
-          userId,
-          date: { gte: weekStart, lt: weekEnd },
-        },
-        include: {
-          recette: {
-            include: {
-              ingredients: {
-                include: { ingredient: { include: { sideTypes: true } } },
-              },
-              allowedSides: { select: { sideType: true } },
-            },
-          },
-          accompagnements: {
-            include: { ingredient: { include: { sideTypes: true } } },
-          },
-        },
-      });
-      console.log(`Menus générés pour ${userId} : ${menu.length} entrées`);
-    }
-
-    // 5️⃣ Retourne la semaine (existante ou nouvellement créée)
-    return res.status(200).json(menu);
-  } catch (err) {
-    console.error("GET /api/menu/[userId] error :", err);
-    return res
-      .status(500)
-      .json({ message: "Erreur serveur", error: err.message });
+    console.log(`Menus after generation: ${menu.length}`);
   }
+
+  // ⑥ On renvoie la semaine complète
+  return res.status(200).json(menu);
 }
