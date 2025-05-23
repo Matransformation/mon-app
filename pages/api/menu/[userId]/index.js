@@ -11,29 +11,27 @@ export default async function handler(req, res) {
     return res.status(405).end(`Méthode ${req.method} non autorisée`);
   }
 
-  // ① Désactiver le cache pour toujours exécuter la logique
+  // Désactive le cache pour toujours générer si besoin
   res.setHeader("Cache-Control", "no-store");
 
-  // ② Calcul de weekStart (en local) à partir du paramètre date-only
-  let weekStart;
-  if (req.query.weekStart) {
-    const iso = req.query.weekStart.slice(0, 10);       // "YYYY-MM-DD"
-    const [y, m, d] = iso.split("-").map(Number);
-    weekStart = new Date(y, m - 1, d);                  // minuit locale
-  } else {
-    weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
-  }
-  const weekEnd = addDays(weekStart, 7);               // exclusif
+  // ① Détermine weekStart (lundi) et weekEnd (dimanche inclus)
+  const weekStart = req.query.weekStart
+    ? new Date(req.query.weekStart)
+    : startOfWeek(new Date(), { weekStartsOn: 1 });
+  const weekEnd = addDays(weekStart, 6);
 
   console.log(
     `Fetching menu for user ${userId} from ${weekStart.toISOString()} to ${weekEnd.toISOString()}`
   );
 
-  // ③ Récupérer ce qui existe déjà
+  // ② Récupère les jours déjà créés (Lundi→Dimanche inclus)
   let menu = await prisma.menuJournalier.findMany({
     where: {
       userId,
-      date: { gte: weekStart, lt: weekEnd },
+      date: {
+        gte: weekStart,
+        lte: weekEnd,
+      },
     },
     include: {
       recette: {
@@ -51,7 +49,7 @@ export default async function handler(req, res) {
   });
   console.log(`Menus found: ${menu.length}`);
 
-  // ④ Si ***aucun*** jour n’existe, on génère puis on relit
+  // ③ Si aucun jour n’existe, génère la semaine
   if (menu.length === 0) {
     console.log(`Aucun menu trouvé pour ${userId}, génération auto…`);
 
@@ -62,24 +60,19 @@ export default async function handler(req, res) {
     const genRes = await fetch(`${baseUrl}/api/menu/generer`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId,
-        weekStart: weekStart.toISOString().slice(0, 10),  // on n’envoie que "YYYY-MM-DD"
-      }),
+      body: JSON.stringify({ userId, weekStart: weekStart.toISOString() }),
     });
     if (!genRes.ok) {
       const err = await genRes.json().catch(() => ({}));
       console.error("❌ Échec génération auto:", err);
-      return res
-        .status(500)
-        .json({ message: "Erreur génération auto", detail: err });
+      return res.status(500).json({ message: "Erreur génération auto", detail: err });
     }
 
-    // ⑤ Relire les menus fraîchement créés
+    // ④ Relit *après* génération
     menu = await prisma.menuJournalier.findMany({
       where: {
         userId,
-        date: { gte: weekStart, lt: weekEnd },
+        date: { gte: weekStart, lte: weekEnd },
       },
       include: {
         recette: {
@@ -98,6 +91,6 @@ export default async function handler(req, res) {
     console.log(`Menus after generation: ${menu.length}`);
   }
 
-  // ⑥ On renvoie la semaine complète
+  // ⑤ Retourne du Lundi au Dimanche
   return res.status(200).json(menu);
 }
