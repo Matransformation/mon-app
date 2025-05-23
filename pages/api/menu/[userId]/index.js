@@ -1,7 +1,7 @@
-// pages/api/menu/[userId]/index.js
+// File: pages/api/menu/[userId]/index.js
 
 import prisma from "../../../../lib/prisma";
-import { startOfWeek } from "date-fns";
+import { startOfWeek, addDays } from "date-fns";
 
 export default async function handler(req, res) {
   const { userId } = req.query;
@@ -20,8 +20,8 @@ export default async function handler(req, res) {
   const weekStart = req.query.weekStart
     ? new Date(req.query.weekStart)
     : startOfWeek(new Date(), { weekStartsOn: 1 });
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekEnd.getDate() + 7);
+  // Exclusif : on prend exactement 7 jours après
+  const weekEnd = addDays(weekStart, 7);
 
   console.log(
     `Fetching menu for user ${userId} from ${weekStart.toISOString()} to ${weekEnd.toISOString()}`
@@ -53,7 +53,7 @@ export default async function handler(req, res) {
   if (menu.length === 0) {
     console.log(`Aucun menu trouvé pour ${userId}, génération auto…`);
 
-    // Appel à ton endpoint de génération
+    // Appel à l’endpoint de génération
     const proto = (req.headers["x-forwarded-proto"] || "http").split(",")[0];
     const host = req.headers.host;
     const baseUrl = `${proto}://${host}`;
@@ -97,6 +97,6 @@ export default async function handler(req, res) {
     console.log(`Menus after generation: ${menu.length}`);
   }
 
-  // ⑥ On renvoie la semaine complète
+  // ⑥ On renvoie les entrées en base pour cette semaine
   return res.status(200).json(menu);
 }
