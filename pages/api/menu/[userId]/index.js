@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     return res.status(405).end(`Méthode ${req.method} non autorisée`);
   }
 
-  // ① Désactiver le cache
+  // ① Toujours désactiver le cache
   res.setHeader("Cache-Control", "no-store");
 
   // ② Semaine ciblée
@@ -20,43 +20,61 @@ export default async function handler(req, res) {
     : startOfWeek(new Date(), { weekStartsOn: 1 });
   const weekEnd = addDays(weekStart, 7); // exclusif
 
-  console.log(`Fetching menu for user ${userId} from ${weekStart} to ${weekEnd}`);
+  console.log(
+    `Fetching menu for user ${userId} from ${weekStart.toISOString()} to ${weekEnd.toISOString()}`
+  );
 
-  // ③ Lire ce qui existe
+  // ③ Lire les menus existants
   let menu = await prisma.menuJournalier.findMany({
-    where: { userId, date: { gte: weekStart, lt: weekEnd } },
+    where: {
+      userId,
+      date: { gte: weekStart, lt: weekEnd },
+    },
     include: {
       recette: {
         include: {
-          ingredients: { include: { ingredient: { include: { sideTypes: true } } } },
+          ingredients: {
+            include: { ingredient: { include: { sideTypes: true } } },
+          },
           allowedSides: { select: { sideType: true } },
         },
       },
-      accompagnements: { include: { ingredient: { include: { sideTypes: true } } } },
+      accompagnements: {
+        include: { ingredient: { include: { sideTypes: true } } },
+      },
     },
   });
+
   console.log(`Menus found: ${menu.length}`);
 
-  // ④ Générer **si et seulement si** il manque des jours
-  if (menu.length < 7) {
-    console.log(`Only ${menu.length} day(s), generating automatically…`);
+  // ④ **Nouveau** : ne générer que si la semaine est *entièrement* vide
+ if (menu.length === 0) {
+    console.log(`Aucun menu trouvé pour ${userId}, génération auto…`);
     await generateWeeklyMenu(userId, weekStart.toISOString());
-    // ⑤ re-fetch
+
+    // relire après génération
     menu = await prisma.menuJournalier.findMany({
-      where: { userId, date: { gte: weekStart, lt: weekEnd } },
+      where: {
+        userId,
+        date: { gte: weekStart, lt: weekEnd },
+      },
       include: {
         recette: {
           include: {
-            ingredients: { include: { ingredient: { include: { sideTypes: true } } } },
+            ingredients: {
+              include: { ingredient: { include: { sideTypes: true } } },
+            },
             allowedSides: { select: { sideType: true } },
           },
         },
-        accompagnements: { include: { ingredient: { include: { sideTypes: true } } } },
+        accompagnements: {
+          include: { ingredient: { include: { sideTypes: true } } },
+        },
       },
     });
     console.log(`Menus after generation: ${menu.length}`);
   }
 
-  // ⑥ Retourne
+  // ⑤ Retourner le menu
   return res.status(200).json(menu);
 }
