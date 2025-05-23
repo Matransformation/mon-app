@@ -8,10 +8,10 @@ export default async function handler(req, res) {
     return res.status(405).end(`Méthode ${req.method} non autorisée`);
   }
 
-  // ① Jamais cacher : toujours exécuter la logique
+  // On désactive le cache pour forcer la logique à chaque appel
   res.setHeader("Cache-Control", "no-store");
 
-  // ② Calculer weekStart/ weekEnd
+  // Calcul de weekStart (lundi) et weekEnd (dimanche inclus)
   let weekStart;
   if (req.query.weekStart) {
     const iso = req.query.weekStart.slice(0, 10);
@@ -20,17 +20,17 @@ export default async function handler(req, res) {
   } else {
     weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
   }
-  const weekEnd = addDays(weekStart, 7); // exclusif
+  const weekEnd = addDays(weekStart, 6);
 
   console.log(
     `Fetching menu for user ${userId} from ${weekStart.toISOString()} to ${weekEnd.toISOString()}`
   );
 
-  // ③ Récupérer les menus existants pour cette plage
+  // Récupérer le menu existant
   let menu = await prisma.menuJournalier.findMany({
     where: {
       userId,
-      date: { gte: weekStart, lt: weekEnd },
+      date: { gte: weekStart, lte: weekEnd },
     },
     include: {
       recette: {
@@ -48,9 +48,9 @@ export default async function handler(req, res) {
   });
   console.log(`Menus found: ${menu.length}`);
 
-  // ④ Si **aucun** menu sur toute la semaine => on génère...
+  // Si c’est totalement vide, on génère **une seule** fois, puis on relit
   if (menu.length === 0) {
-    console.log(`Aucun menu pour ${userId}, génération automatique…`);
+    console.log(`Aucun menu pour ${userId}, génération auto…`);
     const proto = (req.headers["x-forwarded-proto"] || "http").split(",")[0];
     const host  = req.headers.host;
     const base  = `${proto}://${host}`;
@@ -71,11 +71,11 @@ export default async function handler(req, res) {
         .json({ message: "Erreur génération auto", detail: err });
     }
 
-    // ⑤ On relit **une seule fois** après génération
+    // Relire **une seule fois** après génération
     menu = await prisma.menuJournalier.findMany({
       where: {
         userId,
-        date: { gte: weekStart, lt: weekEnd },
+        date: { gte: weekStart, lte: weekEnd },
       },
       include: {
         recette: {
@@ -94,6 +94,5 @@ export default async function handler(req, res) {
     console.log(`Menus after generation: ${menu.length}`);
   }
 
-  // ⑥ On renvoie la semaine complète
   return res.status(200).json(menu);
 }
