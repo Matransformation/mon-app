@@ -17,7 +17,8 @@ export default function WeekNavigator({
       <span className="text-xl font-bold text-gray-700">
         Semaine du {label}
       </span>
-      <div className="flex flex-wrap gap-2 mt-2 md:mt-0 justify-center md:justify-start w-full">        <button
+      <div className="flex flex-wrap gap-2 mt-2 md:mt-0 justify-center md:justify-start w-full">
+        <button
           onClick={prevWeek}
           className="px-3 py-1 bg-orange-400 text-white rounded hover:bg-orange-500 transition"
         >
@@ -47,24 +48,6 @@ export default function WeekNavigator({
         >
           🛒 Liste de courses
         </a>
-        <button
-  onClick={() => {
-    if (
-      confirm(
-        "Générer le menu pour cette semaine ? Cela écrasera l’existant."
-      )
-    ) {
-      fetch("/api/menu/generer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, weekStart }), // 👈 correction ici
-      }).then(reload);
-    }
-  }}
-  className="px-3 py-1 bg-green-400 text-white rounded hover:bg-green-500 transition"
->
-  + Générer mon menu
-</button>
       </div>
     </div>
   );
