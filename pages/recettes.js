@@ -1,11 +1,12 @@
-import { useSession } from "next-auth/react"; // Ajoute cette ligne
+// pages/recettes.js
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import axios from "axios";
 import { Search } from "lucide-react";
 import Navbar from "../components/Navbar";
+import withAuthProtection from "../lib/withAuthProtection";
 
-export default function ListeRecettes() {
+function ListeRecettes() {
   const [recettes, setRecettes] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -37,11 +38,7 @@ export default function ListeRecettes() {
   };
 
   const calculerNutritionEtPrix = (ingredients) => {
-    let totalCalories = 0;
-    let totalProtein = 0;
-    let totalFat = 0;
-    let totalCarbs = 0;
-    let totalPrice = 0;
+    let totalCalories = 0, totalProtein = 0, totalFat = 0, totalCarbs = 0, totalPrice = 0;
 
     ingredients.forEach((ri) => {
       if (ri.ingredient) {
@@ -89,16 +86,11 @@ export default function ListeRecettes() {
         const bNutri = calculerNutritionEtPrix(b.ingredients);
 
         switch (sortOption) {
-          case "calories-asc":
-            return aNutri.calories - bNutri.calories;
-          case "calories-desc":
-            return bNutri.calories - aNutri.calories;
-          case "price-asc":
-            return aNutri.price - bNutri.price;
-          case "price-desc":
-            return bNutri.price - aNutri.price;
-          default:
-            return 0;
+          case "calories-asc": return aNutri.calories - bNutri.calories;
+          case "calories-desc": return bNutri.calories - aNutri.calories;
+          case "price-asc": return aNutri.price - bNutri.price;
+          case "price-desc": return bNutri.price - aNutri.price;
+          default: return 0;
         }
       });
     }
@@ -153,33 +145,21 @@ export default function ListeRecettes() {
 
         {/* Filtres tri */}
         <div className="flex gap-4 justify-center mb-6">
-          <button
-            onClick={() => setSortOption("calories-asc")}
-            className="bg-blue-100 text-blue-800 px-3 py-1 rounded hover:bg-blue-200"
-          >
+          <button onClick={() => setSortOption("calories-asc")} className="bg-blue-100 text-blue-800 px-3 py-1 rounded hover:bg-blue-200">
             🔥 Calories croissant
           </button>
-          <button
-            onClick={() => setSortOption("calories-desc")}
-            className="bg-blue-100 text-blue-800 px-3 py-1 rounded hover:bg-blue-200"
-          >
+          <button onClick={() => setSortOption("calories-desc")} className="bg-blue-100 text-blue-800 px-3 py-1 rounded hover:bg-blue-200">
             🔥 Calories décroissant
           </button>
-          <button
-            onClick={() => setSortOption("price-asc")}
-            className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded hover:bg-yellow-200"
-          >
+          <button onClick={() => setSortOption("price-asc")} className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded hover:bg-yellow-200">
             💶 Prix croissant
           </button>
-          <button
-            onClick={() => setSortOption("price-desc")}
-            className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded hover:bg-yellow-200"
-          >
+          <button onClick={() => setSortOption("price-desc")} className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded hover:bg-yellow-200">
             💶 Prix décroissant
           </button>
         </div>
 
-        {/* Affichage recettes */}
+        {/* Recettes */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {getFilteredAndSortedRecettes().map((recette) => {
             const imageUrl = recette.photoUrl?.startsWith("/")
@@ -228,51 +208,5 @@ export default function ListeRecettes() {
     </>
   );
 }
-import { getServerSession } from "next-auth/next";
-import prisma from "../lib/prisma"; // Assure-toi que le chemin est correct
-import authOptions from "../pages/api/auth/[...nextauth]"; // Chemin vers ton fichier de config NextAuth
 
-export async function getServerSideProps(context) {
-  // 1) Vérifier la session NextAuth
-  const session = await getServerSession(context.req, context.res, authOptions);
-  console.log("Session:", session); // Ajoute un log pour vérifier la session
-
-  // Si l'utilisateur n'est pas authentifié
-  if (!session?.user?.email) {
-    return {
-      redirect: {
-        destination: "/auth/signin", // Redirige vers la page de connexion
-        permanent: false,
-      },
-    };
-  }
-
-  // 2) Récupérer l'utilisateur et vérifier sa période d'essai ou son abonnement
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
-    select: {
-      trialEndsAt: true,
-      isSubscribed: true,
-    },
-  });
-
-  // Vérifier la période d'essai
-  const now = new Date();
-  const trialActive = user?.trialEndsAt && now <= new Date(user.trialEndsAt);
-  const hasAccess = user?.isSubscribed || trialActive;
-
-  // Si l'utilisateur n'a pas accès, le rediriger vers la page "mon-compte"
-  if (!hasAccess) {
-    return {
-      redirect: {
-        destination: "/mon-compte", // Page où l'utilisateur peut gérer son abonnement
-        permanent: false,
-      },
-    };
-  }
-
-  // 3) Si tout va bien, continuer à charger la page
-  return {
-    props: {},
-  };
-}
+export default withAuthProtection(ListeRecettes);

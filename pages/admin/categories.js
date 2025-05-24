@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import withAuthProtection from "../../lib/withAuthProtection";
 
-export default function CategoriesAdmin() {
+
+function CategoriesAdmin() {
   const [categories, setCategories] = useState([]);
   const [newCategory, setNewCategory] = useState("");
 
@@ -77,3 +79,4 @@ export default function CategoriesAdmin() {
     </div>
   );
 }
+export default withAuthProtection(CategoriesAdmin);

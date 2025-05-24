@@ -146,6 +146,7 @@ model VerificationToken {
 model Recette {
   id               String               @id @default(cuid()) @db.VarChar(191)
   name             String               @db.VarChar(191)
+  slug             String               @unique
   description      String?              @db.VarChar(191)
   price            Float?
   timeCook         Int?

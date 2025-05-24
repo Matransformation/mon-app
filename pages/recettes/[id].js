@@ -1,11 +1,13 @@
+// pages/recettes/[id].js
 import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { Heart, Printer, Download, Share2 } from "lucide-react";
 import { useSession } from "next-auth/react";
-import Navbar from "../../components/Navbar"; // ✅ import Navbar
+import Navbar from "../../components/Navbar";
+import withAuthProtection from "../../lib/withAuthProtection";
 
-export default function RecetteDetail() {
+function RecetteDetail() {
   const router = useRouter();
   const { id } = router.query;
   const { data: session } = useSession();
@@ -84,8 +86,8 @@ export default function RecetteDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar /> {/* ✅ Navbar ici */}
-      
+      <Navbar />
+
       <div className="relative h-[60vh] w-full overflow-hidden">
         <img
           src={recette.photoUrl || "/images/placeholder.png"}
@@ -182,3 +184,5 @@ export default function RecetteDetail() {
     </div>
   );
 }
+
+export default withAuthProtection(RecetteDetail);

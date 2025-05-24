@@ -3,8 +3,9 @@ import Link from "next/link";
 import axios from "axios";
 import Navbar from "../components/Navbar";
 import { useSession } from "next-auth/react";
+import withAuthProtection from "../lib/withAuthProtection"; // ✅ Ajouté
 
-export default function MesFavoris() {
+function MesFavoris() {
   const { data: session, status } = useSession();
   const [favoris, setFavoris] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -80,51 +81,4 @@ export default function MesFavoris() {
   );
 }
 
-import { getServerSession } from "next-auth/next";
-import prisma from "../lib/prisma"; // Assure-toi que le chemin est correct
-import authOptions from "../pages/api/auth/[...nextauth]"; // Chemin vers ton fichier de config NextAuth
-
-export async function getServerSideProps(context) {
-  // 1) Vérifier la session NextAuth
-  const session = await getServerSession(context.req, context.res, authOptions);
-  console.log("Session:", session); // Ajoute un log pour vérifier la session
-
-  // Si l'utilisateur n'est pas authentifié
-  if (!session?.user?.email) {
-    return {
-      redirect: {
-        destination: "/auth/signin", // Redirige vers la page de connexion
-        permanent: false,
-      },
-    };
-  }
-
-  // 2) Récupérer l'utilisateur et vérifier sa période d'essai ou son abonnement
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
-    select: {
-      trialEndsAt: true,
-      isSubscribed: true,
-    },
-  });
-
-  // Vérifier la période d'essai
-  const now = new Date();
-  const trialActive = user?.trialEndsAt && now <= new Date(user.trialEndsAt);
-  const hasAccess = user?.isSubscribed || trialActive;
-
-  // Si l'utilisateur n'a pas accès, le rediriger vers la page "mon-compte"
-  if (!hasAccess) {
-    return {
-      redirect: {
-        destination: "/mon-compte", // Page où l'utilisateur peut gérer son abonnement
-        permanent: false,
-      },
-    };
-  }
-
-  // 3) Si tout va bien, continuer à charger la page
-  return {
-    props: {},
-  };
-}
+export default withAuthProtection(MesFavoris); // ✅ Appliqué ici

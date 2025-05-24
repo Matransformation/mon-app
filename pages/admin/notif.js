@@ -1,8 +1,9 @@
 // pages/admin/notif.js
 import { useState } from "react"
 import axios from "axios"
+import withAuthProtection from "../../lib/withAuthProtection";
 
-export default function NotificationAdminPage() {
+function NotificationAdminPage() {
   const [title, setTitle] = useState("")
   const [message, setMessage] = useState("")
   const [status, setStatus] = useState(null)
@@ -48,3 +49,4 @@ export default function NotificationAdminPage() {
     </div>
   )
 }
+export default withAuthProtection(NotificationAdminPage);

@@ -1,41 +1,67 @@
-import prisma from "../../../lib/prisma"; // Assurez-vous d'avoir correctement configuré Prisma
+// pages/api/utilisateur/[id].js
+import prisma from "../../../lib/prisma";
 
 export default async function handler(req, res) {
   const { method } = req;
-  const { id } = req.query; // Récupère l'ID de l'URL
+  const { id } = req.query;
 
-  // Si la méthode est GET, récupérer un utilisateur par son ID
   if (method === "GET") {
     try {
-      const utilisateur = await prisma.user.findUnique({
-        where: { id },
-      });
+      const utilisateur = await prisma.user.findUnique({ where: { id } });
 
       if (!utilisateur) {
         return res.status(404).json({ message: "Utilisateur non trouvé" });
       }
 
-      res.status(200).json(utilisateur);
+      return res.status(200).json(utilisateur);
     } catch (error) {
-      console.error("Erreur récupération utilisateur par ID :", error);
-      res.status(500).json({ message: "Erreur lors de la récupération de l'utilisateur" });
+      console.error("Erreur récupération utilisateur :", error);
+      return res.status(500).json({ message: "Erreur récupération utilisateur" });
     }
   }
-  // Si la méthode est PUT, mettre à jour un utilisateur par son ID
-  else if (method === "PUT") {
-    const { name, email, role } = req.body; // Récupère le rôle, le nom et l'email envoyés pour la mise à jour
+
+  if (method === "PUT") {
+    const { name, email, role } = req.body;
+    const data = {};
+    if (name !== undefined) data.name = name;
+    if (email !== undefined) data.email = email;
+    if (role !== undefined) data.role = role;
+
     try {
       const updatedUser = await prisma.user.update({
         where: { id },
-        data: { name, email, role }, // Inclut le rôle dans la mise à jour
+        data,
       });
-      res.status(200).json(updatedUser);
+      return res.status(200).json(updatedUser);
     } catch (error) {
-      console.error("Erreur mise à jour utilisateur par ID :", error);
-      res.status(500).json({ message: "Erreur lors de la mise à jour de l'utilisateur" });
+      console.error("Erreur mise à jour utilisateur :", error);
+      return res.status(500).json({ message: "Erreur mise à jour utilisateur" });
     }
   }
-  else {
-    res.status(405).json({ message: "Méthode non autorisée" });
+
+  if (method === "DELETE") {
+    try {
+      await prisma.$transaction([
+        prisma.accompagnement.deleteMany({ where: { menu: { userId: id } } }),
+        prisma.menuJournalier.deleteMany({ where: { userId: id } }),
+        prisma.repasJournalier.deleteMany({ where: { userId: id } }),
+        prisma.favori.deleteMany({ where: { utilisateurId: id } }),
+        prisma.historiquePoids.deleteMany({ where: { utilisateurId: id } }),
+        prisma.mensurations.deleteMany({ where: { utilisateurId: id } }),
+        prisma.account.deleteMany({ where: { userId: id } }),
+        prisma.session.deleteMany({ where: { userId: id } }),
+        prisma.emailVerificationToken.deleteMany({ where: { userId: id } }),
+        prisma.passwordResetToken.deleteMany({ where: { userId: id } }),
+        prisma.user.delete({ where: { id } }),
+      ]);
+
+      return res.status(200).json({ message: "Utilisateur supprimé" });
+    } catch (error) {
+      console.error("Erreur suppression utilisateur :", error);
+      return res.status(500).json({ message: "Erreur suppression utilisateur" });
+    }
   }
+
+  res.setHeader("Allow", ["GET", "PUT", "DELETE"]);
+  return res.status(405).json({ message: `Méthode ${method} non autorisée` });
 }

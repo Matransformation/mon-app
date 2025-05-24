@@ -6,7 +6,7 @@ import { fr } from "date-fns/locale";
 import useMenu from "../hooks/useMenu";
 import Navbar from "../components/Navbar"; // Assure-toi que le chemin est correct
 
-export default function ListeCoursesPage() {
+function ListeCoursesPage() {
   const { menu, loading, weekStart, prevWeek, nextWeek } = useMenu();
   const [shoppingList, setShoppingList] = useState({});
   const [checkedItems, setCheckedItems] = useState({});
@@ -205,51 +205,7 @@ export default function ListeCoursesPage() {
   );
 }
 
-import { getServerSession } from "next-auth/next";
-import prisma from "../lib/prisma"; // Assure-toi que le chemin est correct
-import authOptions from "../pages/api/auth/[...nextauth]"; // Chemin vers ton fichier de config NextAuth
+import withAuthProtection from "../lib/withAuthProtection";
 
-export async function getServerSideProps(context) {
-  // 1) Vérifier la session NextAuth
-  const session = await getServerSession(context.req, context.res, authOptions);
-  console.log("Session:", session); // Ajoute un log pour vérifier la session
+export default withAuthProtection(ListeCoursesPage);
 
-  // Si l'utilisateur n'est pas authentifié
-  if (!session?.user?.email) {
-    return {
-      redirect: {
-        destination: "/auth/signin", // Redirige vers la page de connexion
-        permanent: false,
-      },
-    };
-  }
-
-  // 2) Récupérer l'utilisateur et vérifier sa période d'essai ou son abonnement
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
-    select: {
-      trialEndsAt: true,
-      isSubscribed: true,
-    },
-  });
-
-  // Vérifier la période d'essai
-  const now = new Date();
-  const trialActive = user?.trialEndsAt && now <= new Date(user.trialEndsAt);
-  const hasAccess = user?.isSubscribed || trialActive;
-
-  // Si l'utilisateur n'a pas accès, le rediriger vers la page "mon-compte"
-  if (!hasAccess) {
-    return {
-      redirect: {
-        destination: "/mon-compte", // Page où l'utilisateur peut gérer son abonnement
-        permanent: false,
-      },
-    };
-  }
-
-  // 3) Si tout va bien, continuer à charger la page
-  return {
-    props: {},
-  };
-}

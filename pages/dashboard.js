@@ -1,3 +1,4 @@
+// pages/dashboard.js
 import React, { useState } from "react";
 import { useSession, getSession } from "next-auth/react";
 import dynamic from "next/dynamic";
@@ -10,8 +11,9 @@ import WeightChart from "../components/dashboard/WeightChart";
 import MeasurementsHistory from "../components/dashboard/MeasurementsHistory";
 import MeasurementsForm from "../components/dashboard/MeasurementsForm";
 import prisma from "../lib/prisma";
+import withAuthProtection from "../lib/withAuthProtection";
 
-// Chart.js
+// Chart.js setup
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -36,13 +38,11 @@ const Line = dynamic(() => import("react-chartjs-2").then((mod) => mod.Line), {
   ssr: false,
 });
 
-export default function Dashboard({ utilisateur }) {
+function Dashboard({ utilisateur }) {
   const { data: session, status } = useSession();
 
   const [poidsList, setPoidsList] = useState(utilisateur.historiquePoids);
-  const [metabolismeCible, setMetabolismeCible] = useState(
-    utilisateur.metabolismeCible ?? ""
-  );
+  const [metabolismeCible, setMetabolismeCible] = useState(utilisateur.metabolismeCible ?? "");
   const [mensuList, setMensuList] = useState(utilisateur.mensurations);
 
   if (status === "loading") return <p>Chargement…</p>;
@@ -50,7 +50,6 @@ export default function Dashboard({ utilisateur }) {
 
   const dernierPoids = poidsList.at(-1)?.poids ?? 0;
 
-  // Poids
   const handleAddWeight = async (poids) => {
     const res = await fetch("/api/utilisateur/poids", {
       method: "POST",
@@ -61,12 +60,12 @@ export default function Dashboard({ utilisateur }) {
     setPoidsList((p) => [...p, data]);
     return data;
   };
+
   const handleDeleteWeight = async (id) => {
     await fetch(`/api/utilisateur/poids/${id}`, { method: "DELETE" });
     setPoidsList((p) => p.filter((e) => e.id !== id));
   };
 
-  // Métabo
   const handleSaveMetabo = async (formData) => {
     const res = await fetch("/api/utilisateur/metabolisme", {
       method: "POST",
@@ -78,7 +77,6 @@ export default function Dashboard({ utilisateur }) {
     return { metabolismeCible };
   };
 
-  // Mensurations
   const handleAddMensu = async (data) => {
     const res = await fetch("/api/utilisateur/mensurations", {
       method: "POST",
@@ -89,10 +87,9 @@ export default function Dashboard({ utilisateur }) {
     setMensuList((m) => [created, ...m]);
     return created;
   };
+
   const handleDeleteMensu = async (id) => {
-    await fetch(`/api/utilisateur/mensurations/${id}`, {
-      method: "DELETE",
-    });
+    await fetch(`/api/utilisateur/mensurations/${id}`, { method: "DELETE" });
     setMensuList((m) => m.filter((e) => e.id !== id));
   };
 
@@ -128,10 +125,7 @@ export default function Dashboard({ utilisateur }) {
         </Card>
 
         <Card className="md:col-span-2">
-          <MeasurementsHistory
-            mensurations={mensuList}
-            onDelete={handleDeleteMensu}
-          />
+          <MeasurementsHistory mensurations={mensuList} onDelete={handleDeleteMensu} />
         </Card>
 
         <Card className="md:col-span-2">
@@ -144,27 +138,13 @@ export default function Dashboard({ utilisateur }) {
 
 export async function getServerSideProps(context) {
   const session = await getSession(context);
-  if (!session) {
-    return { redirect: { destination: "/auth/signin", permanent: false } };
-  }
-
-  // vérif droits…
-  const userAccess = await prisma.user.findUnique({
-    where: { email: session.user.email },
-    select: { trialEndsAt: true, isSubscribed: true, role: true },
-  });
-  const now = new Date();
-  const trialActive = userAccess?.trialEndsAt && now <= userAccess.trialEndsAt;
-  const hasAccess =
-    userAccess.role === "admin" || userAccess.isSubscribed || trialActive;
-  if (!hasAccess) {
-    return { redirect: { destination: "/mon-compte", permanent: false } };
-  }
+  if (!session) return { redirect: { destination: "/login", permanent: false } };
 
   const raw = await prisma.user.findUnique({
     where: { email: session.user.email },
     include: { historiquePoids: true, mensurations: true },
   });
+
   if (!raw) return { notFound: true };
 
   const utilisateur = {
@@ -197,3 +177,5 @@ export async function getServerSideProps(context) {
 
   return { props: { utilisateur } };
 }
+
+export default withAuthProtection(Dashboard);

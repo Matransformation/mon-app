@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useRouter } from "next/router";
+import withAuthProtection from "../../../lib/withAuthProtection";
 
-export default function ModifierUtilisateur() {
+
+function ModifierUtilisateur() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("user"); // Valeur par défaut "user"
@@ -81,3 +83,4 @@ export default function ModifierUtilisateur() {
     </div>
   );
 }
+export default withAuthProtection(ModifierUtilisateur);

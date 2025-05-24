@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import axios from "axios";
+import withAuthProtection from "../../lib/withAuthProtection";
 
 // ─── OPTIONS STATIQUES ────────────────────────────────────────────────
 // Accompagnements possibles
@@ -32,7 +33,7 @@ const INGREDIENT_TYPES = [
   "Autre",
 ];
 
-export default function GestionIngredients() {
+function GestionIngredients() {
   // états principaux
   const [ingredients, setIngredients] = useState([]);
   const [newIng, setNewIng] = useState({
@@ -462,3 +463,4 @@ export default function GestionIngredients() {
     </div>
   );
 }
+export default withAuthProtection(GestionIngredients);

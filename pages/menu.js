@@ -1,12 +1,12 @@
-// pages/menu.js
-import React from 'react';
-import Navbar from '../components/Navbar';
-import WeekMenu from '../components/Menu/WeekMenu';
-import { getServerSession } from 'next-auth/next';
-import prisma from '../lib/prisma';
-import authOptions from './api/auth/[...nextauth]';
+import React from "react";
+import Navbar from "../components/Navbar";
+import WeekMenu from "../components/Menu/WeekMenu";
+import withAuthProtection from "../lib/withAuthProtection";
+import { getServerSession } from "next-auth/next";
+import authOptions from "./api/auth/[...nextauth]";
+import prisma from "../lib/prisma";
 
-export default function MenuPage({ user }) {
+function MenuPage({ user }) {
   return (
     <>
       <Navbar />
@@ -17,19 +17,15 @@ export default function MenuPage({ user }) {
   );
 }
 
-// … getServerSideProps …
-
-
-export async function getServerSideProps(context) {
-  const session = await getServerSession(
-    context.req,
-    context.res,
-    authOptions
-  );
+export const getServerSideProps = async (context) => {
+  const session = await getServerSession(context.req, context.res, authOptions);
 
   if (!session?.user?.email) {
     return {
-      redirect: { destination: '/auth/signin', permanent: false },
+      redirect: {
+        destination: "/auth/signin",
+        permanent: false,
+      },
     };
   }
 
@@ -39,19 +35,23 @@ export async function getServerSideProps(context) {
       id: true,
       poids: true,
       metabolismeCible: true,
-      trialEndsAt: true,
       isSubscribed: true,
+      stripeCurrentPeriodEnd: true,
+      trialEndsAt: true,
     },
   });
 
   const now = new Date();
-  const trialActive =
-    dbUser?.trialEndsAt && now <= new Date(dbUser.trialEndsAt);
-  const hasAccess = dbUser?.isSubscribed || trialActive;
+  const trialActive = dbUser?.trialEndsAt && now <= new Date(dbUser.trialEndsAt);
+  const stillActive = dbUser?.stripeCurrentPeriodEnd && new Date(dbUser.stripeCurrentPeriodEnd) > now;
+  const hasAccess = dbUser?.isSubscribed || stillActive || trialActive;
 
   if (!hasAccess) {
     return {
-      redirect: { destination: '/mon-compte', permanent: false },
+      redirect: {
+        destination: "/mon-compte",
+        permanent: false,
+      },
     };
   }
 
@@ -64,4 +64,6 @@ export async function getServerSideProps(context) {
       },
     },
   };
-}
+};
+
+export default withAuthProtection(MenuPage);

@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useRouter } from "next/router";
+import withAuthProtection from "../../lib/withAuthProtection";
 
-export default function AjouterRecette() {
+
+function AjouterRecette() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [preparationTime, setPreparationTime] = useState("");
@@ -198,3 +200,4 @@ export default function AjouterRecette() {
     </div>
   );
 }
+export default withAuthProtection(AjouterRecette);

@@ -82,6 +82,9 @@ export default function Navbar() {
           <Link href="/mon-compte" className="text-sm text-gray-700 hover:text-green-700 font-medium">
             Mon compte
           </Link>
+          <Link href="/dashboard" className="text-sm text-gray-700 hover:text-green-700 font-medium">
+            Dashboard
+          </Link>
           <button
             onClick={() => signOut()}
             className="text-sm bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded w-fit"

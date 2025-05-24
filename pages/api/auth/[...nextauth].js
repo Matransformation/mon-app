@@ -57,8 +57,11 @@ export const authOptions = {
             stripePriceId: true,
             subscriptionEnd: true,
             trialEndsAt: true,
+            role: true, // ✅ AJOUTÉ ICI
+            stripeCurrentPeriodEnd: true, 
           },
         });
+
         token.id = dbUser.id;
         token.email = dbUser.email;
         token.name = dbUser.name;
@@ -68,7 +71,10 @@ export const authOptions = {
         token.stripePriceId = dbUser.stripePriceId;
         token.subscriptionEnd = dbUser.subscriptionEnd?.toISOString() ?? null;
         token.trialEndsAt = dbUser.trialEndsAt?.toISOString() ?? null;
+        token.role = dbUser.role; // ✅ AJOUTÉ ICI
+        token.stripeCurrentPeriodEnd = dbUser.stripeCurrentPeriodEnd?.toISOString() ?? null;
       }
+
       return token;
     },
 
@@ -82,7 +88,10 @@ export const authOptions = {
         session.user.stripePriceId = token.stripePriceId;
         session.user.subscriptionEnd = token.subscriptionEnd;
         session.user.trialEndsAt = token.trialEndsAt;
+        session.user.role = token.role; // ✅ AJOUTÉ ICI
+        session.user.stripeCurrentPeriodEnd = token.stripeCurrentPeriodEnd;
       }
+
       return session;
     },
   },

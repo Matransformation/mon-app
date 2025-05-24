@@ -1,8 +1,9 @@
 import { useState } from "react";
 import axios from "axios";
 import { Search } from "lucide-react";
+import withAuthProtection from "../../lib/withAuthProtection";
 
-export default function ImportIngredient() {
+function ImportIngredient() {
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -95,3 +96,4 @@ export default function ImportIngredient() {
     </div>
   );
 }
+export default withAuthProtection(ImportIngredient);

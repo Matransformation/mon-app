@@ -1,3 +1,4 @@
+// File: components/Menu/WeekMenu.js
 import React, { useState } from "react";
 import WeekNavigator from "./WeekNavigator";
 import DayCard from "./DayCard";
@@ -6,16 +7,7 @@ import useMenu from "../../hooks/useMenu";
 import useAccompagnements from "../../hooks/useAccompagnements";
 
 export default function WeekMenu({ user }) {
-  const {
-    menu,
-    setMenu,             // <-- on récupère setMenu depuis le hook
-    weekStart,
-    prevWeek,
-    nextWeek,
-    reload,
-    loading,
-  } = useMenu();
-
+  const { menu, weekStart, prevWeek, nextWeek, reload, loading } = useMenu();
   const [selectedRepas, setSelectedRepas] = useState(null);
 
   const {
@@ -25,11 +17,11 @@ export default function WeekMenu({ user }) {
     proteinRichOptions,
   } = useAccompagnements({ user, reload });
 
-  // 💡 Mise à jour locale du repas sans muter l'array
   const updateLocalMeal = (updatedRepas) => {
-    setMenu(menu.map(m =>
-      m.id === updatedRepas.id ? { ...m, ...updatedRepas } : m
-    ));
+    const idx = menu.findIndex((m) => m.id === updatedRepas.id);
+    if (idx !== -1) {
+      menu[idx] = { ...menu[idx], ...updatedRepas };
+    }
   };
 
   if (loading) {
@@ -54,13 +46,17 @@ export default function WeekMenu({ user }) {
         userId={user.id}
       />
 
+      {/* 
+        Mobile: 1 colonne
+        Desktop (md+): 2 colonnes => 2 jours par ligne
+      */}
       <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
         {days.map((day) => (
           <DayCard
             key={day.toISOString()}
             date={day}
             entries={menu.filter(
-              e => new Date(e.date).toDateString() === day.toDateString()
+              (e) => new Date(e.date).toDateString() === day.toDateString()
             )}
             user={user}
             openModal={setSelectedRepas}
@@ -68,7 +64,7 @@ export default function WeekMenu({ user }) {
             removeAccompagnements={removeAccompagnements}
             allIngredients={allIngredients}
             proteinRichOptions={proteinRichOptions}
-            onUpdateMeal={updateLocalMeal}
+            onUpdateMeal={updateLocalMeal} // 💡 pour mise à jour locale du repas
           />
         ))}
       </div>
