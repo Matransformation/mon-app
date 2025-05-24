@@ -11,7 +11,11 @@ function MenuPage({ user }) {
     <>
       <Navbar />
       <div className="bg-cream-50 min-h-screen py-8">
-        <WeekMenu user={user} />
+      {user?.id ? (
+  <WeekMenu user={user} key={user.id} />
+) : (
+  <div className="text-center mt-10">Chargement…</div>
+)}
       </div>
     </>
   );
