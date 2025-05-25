@@ -2,6 +2,7 @@
 
 import prisma from "../../lib/prisma";
 import { IncomingForm } from "formidable";
+import cloudinary from "../../lib/cloudinary";
 import fs from "fs";
 import path from "path";
 
@@ -15,14 +16,7 @@ export default async function handler(req, res) {
   const { method } = req;
 
   if (method === "POST") {
-    const form = new IncomingForm();
-    const uploadDir = path.join(process.cwd(), "public/uploads");
-    form.uploadDir = uploadDir;
-    form.keepExtensions = true;
-
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
+    const form = new IncomingForm({ keepExtensions: true });
 
     form.parse(req, async (err, fields, files) => {
       if (err) {
@@ -33,12 +27,12 @@ export default async function handler(req, res) {
       try {
         const name            = fields.name?.[0] || "";
         const description     = fields.description?.[0] || "";
-        const preparationTime = parseInt(fields.preparationTime?.[0]  || "0", 10);
-        const cookingTime     = parseInt(fields.cookingTime?.[0]     || "0", 10);
-        const ingredientsRaw  = fields.ingredients?.[0]   || "[]";
-        const stepsRaw        = fields.steps?.[0]         || "[]";
-        const categoriesRaw   = fields.categories?.[0]    || "[]";
-        const allowedSidesRaw = fields.allowedSides?.[0]  || "[]";
+        const preparationTime = parseInt(fields.preparationTime?.[0] || "0", 10);
+        const cookingTime     = parseInt(fields.cookingTime?.[0] || "0", 10);
+        const ingredientsRaw  = fields.ingredients?.[0] || "[]";
+        const stepsRaw        = fields.steps?.[0] || "[]";
+        const categoriesRaw   = fields.categories?.[0] || "[]";
+        const allowedSidesRaw = fields.allowedSides?.[0] || "[]";
 
         const ingredients   = JSON.parse(ingredientsRaw);
         const steps         = JSON.parse(stepsRaw);
@@ -46,17 +40,20 @@ export default async function handler(req, res) {
         const allowedSides  = JSON.parse(allowedSidesRaw);
 
         const photoFile = files.photo?.[0];
-        const photoUrl  = photoFile
-          ? `/uploads/${path.basename(photoFile.filepath)}`
-          : null;
+        let photoUrl = null;
 
-        // Unité par défaut
+        if (photoFile) {
+          const uploadResult = await cloudinary.uploader.upload(photoFile.filepath, {
+            folder: "recettes",
+          });
+          photoUrl = uploadResult.secure_url;
+        }
+
         const ingredientsWithDefaultUnit = ingredients.map((ing) => ({
           ...ing,
           unit: ing.unit || "g",
         }));
 
-        // Calcul macros & prix
         let totalCalories = 0;
         let totalProtein  = 0;
         let totalFat      = 0;
@@ -70,9 +67,9 @@ export default async function handler(req, res) {
           if (ingredientData) {
             const ratio = ing.quantity / 100;
             totalCalories += ingredientData.calories * ratio;
-            totalProtein  += ingredientData.protein  * ratio;
-            totalFat      += ingredientData.fat      * ratio;
-            totalCarbs    += ingredientData.carbs    * ratio;
+            totalProtein  += ingredientData.protein * ratio;
+            totalFat      += ingredientData.fat * ratio;
+            totalCarbs    += ingredientData.carbs * ratio;
             totalPrice    += (ingredientData.price * ing.quantity) / 1000;
           }
         }
@@ -85,15 +82,15 @@ export default async function handler(req, res) {
             cookingTime,
             steps,
             photoUrl,
-            price:    totalPrice,
+            price: Math.round(totalPrice),
             calories: Math.round(totalCalories),
-            protein:  Math.round(totalProtein),
-            fat:      Math.round(totalFat),
-            carbs:    Math.round(totalCarbs),
+            protein: Math.round(totalProtein),
+            fat: Math.round(totalFat),
+            carbs: Math.round(totalCarbs),
             ingredients: {
               create: ingredientsWithDefaultUnit.map((ing) => ({
                 quantity: parseFloat(ing.quantity),
-                unit:     ing.unit,
+                unit: ing.unit,
                 ingredient: { connect: { id: ing.id } },
               })),
             },
@@ -112,7 +109,7 @@ export default async function handler(req, res) {
       } catch (error) {
         console.error("Erreur Prisma création recette :", error);
         return res.status(500).json({
-          error:   "Erreur lors de la création de la recette",
+          error: "Erreur lors de la création de la recette",
           details: error.message,
         });
       }
@@ -122,13 +119,12 @@ export default async function handler(req, res) {
     try {
       const recettes = await prisma.recette.findMany({
         include: {
-          ingredients:  { include: { ingredient: true } },
-          categories:   { include: { category:   true } },
+          ingredients: { include: { ingredient: true } },
+          categories:  { include: { category: true } },
           allowedSides: true,
         },
       });
 
-      // Retourner allowedSides en simple tableau de string
       const data = recettes.map(({ allowedSides, ...r }) => ({
         ...r,
         allowedSides: allowedSides.map((a) => a.sideType),
@@ -138,7 +134,7 @@ export default async function handler(req, res) {
     } catch (error) {
       console.error("Erreur chargement recettes :", error);
       return res.status(500).json({
-        error:   "Erreur lors de la récupération des recettes",
+        error: "Erreur lors de la récupération des recettes",
         details: error.message,
       });
     }
