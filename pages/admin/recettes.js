@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import axios from "axios";
 import withAuthProtection from "../../lib/withAuthProtection";
+import Image from "next/image";
+
 
 function ListeRecettes() {
   const [recettes, setRecettes] = useState([]);
@@ -74,25 +76,28 @@ function ListeRecettes() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {recettes.map((recette) => {
-            const imageUrl = recette.photoUrl?.startsWith("/")
-              ? recette.photoUrl
-              : `/uploads/${recette.photoUrl}`;
+            
             const nutrition = calculerNutritionEtPrix(recette.ingredients || []);
 
             return (
               <div key={recette.id} className="border rounded shadow p-4 bg-white">
                 {/* Image */}
-                {imageUrl && (
-                  <img
-                    src={imageUrl}
-                    alt={recette.name}
-                    className="w-full h-48 object-cover rounded mb-4 border border-gray-200"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = "/images/placeholder.png";
-                    }}
-                  />
-                )}
+                {recette.photoUrl && (
+  <div className="relative w-full h-48 mb-4 border border-gray-200 rounded overflow-hidden">
+    <Image
+      src={recette.photoUrl}
+      alt={recette.name}
+      layout="fill"
+      objectFit="cover"
+      className="rounded"
+      onError={(e) => {
+        // next/image ne gère pas onError comme img HTML
+        console.warn("Erreur chargement image recette :", recette.photoUrl);
+      }}
+    />
+  </div>
+)}
+
 
                 {/* Titre + Badge scalable */}
                 <div className="flex items-center mb-2">

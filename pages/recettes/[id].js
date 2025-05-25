@@ -6,6 +6,8 @@ import { Heart, Printer, Download, Share2 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Navbar from "../../components/Navbar";
 import withAuthProtection from "../../lib/withAuthProtection";
+import Image from "next/image";
+
 
 function RecetteDetail() {
   const router = useRouter();
@@ -89,11 +91,16 @@ function RecetteDetail() {
       <Navbar />
 
       <div className="relative h-[60vh] w-full overflow-hidden">
-        <img
-          src={recette.photoUrl || "/images/placeholder.png"}
-          alt={recette.name}
-          className="object-cover w-full h-full"
-        />
+      <div className="relative w-full h-[60vh]">
+  <Image
+    src={recette.photoUrl || "/images/placeholder.png"}
+    alt={recette.name}
+    layout="fill"
+    objectFit="cover"
+    priority
+  />
+</div>
+
         <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <h1 className="text-4xl md:text-5xl font-bold text-white text-center">{recette.name}</h1>
         </div>

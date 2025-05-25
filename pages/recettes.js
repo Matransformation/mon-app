@@ -5,6 +5,8 @@ import axios from "axios";
 import { Search } from "lucide-react";
 import Navbar from "../components/Navbar";
 import withAuthProtection from "../lib/withAuthProtection";
+import Image from "next/image";
+
 
 function ListeRecettes() {
   const [recettes, setRecettes] = useState([]);
@@ -162,9 +164,8 @@ function ListeRecettes() {
         {/* Recettes */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {getFilteredAndSortedRecettes().map((recette) => {
-            const imageUrl = recette.photoUrl?.startsWith("/")
-              ? recette.photoUrl
-              : `/uploads/${recette.photoUrl}`;
+            const imageUrl = recette.photoUrl;
+
             const nutrition = calculerNutritionEtPrix(recette.ingredients || []);
 
             return (
@@ -173,13 +174,19 @@ function ListeRecettes() {
                 className="border rounded-lg shadow hover:shadow-lg transition overflow-hidden bg-white cursor-pointer"
                 onClick={() => router.push(`/recettes/${recette.id}`)}
               >
-                {imageUrl && (
-                  <img
-                    src={imageUrl}
-                    alt={recette.name}
-                    className="w-full h-48 object-cover"
-                  />
-                )}
+                {recette.photoUrl && (
+  <div className="relative w-full h-48">
+    <Image
+      src={recette.photoUrl}
+      alt={recette.name}
+      layout="fill"
+      objectFit="cover"
+      className="rounded-t"
+    />
+  </div>
+)}
+
+
                 <div className="p-4 space-y-2">
                   <h2 className="text-xl font-semibold">{recette.name}</h2>
                   <p className="text-gray-600 text-sm">{recette.description}</p>
