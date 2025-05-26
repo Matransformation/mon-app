@@ -8,17 +8,17 @@ export default function Home() {
 
   const features = [
     {
-      img: "/recette-matransformation.png",
+      img: "https://res.cloudinary.com/diccvjf98/image/upload/v1748247242/recette-matransformation_1_t8be4l.png",
       title: "Recettes simples et équilibrées",
       desc: "Des idées de repas sains, adaptés à tes objectifs et faciles à suivre au quotidien.",
     },
     {
-      img: "/menu-matransformation.png",
+      img: "https://res.cloudinary.com/diccvjf98/image/upload/v1748247242/menu-matransformation_1_khgqxd.png",
       title: "Menus personnalisés",
       desc: "Des plans alimentaires sur-mesure selon ton métabolisme, ton poids et ton objectif.",
     },
     {
-      img: "/suivi-matransformation.png",
+      img: "https://res.cloudinary.com/diccvjf98/image/upload/v1748247242/suivi-matransformation_1_jhkste.png",
       title: "Suivi de ta progression",
       desc: "Visualise ton évolution semaine après semaine : poids, objectifs atteints, transformation.",
     },
@@ -55,11 +55,13 @@ export default function Home() {
         {/* HERO */}
         <section className="relative flex items-center justify-center text-white bg-orange-500 h-[70vh]">
           <img
-            src="/hero.jpg"
+            src="https://res.cloudinary.com/diccvjf98/image/upload/v1748242665/hero_izxaoy.jpg"
             alt="Bannière"
             className="absolute inset-0 w-full h-full object-cover opacity-50"
+            width="1920"
+            height="1080"
           />
-          <div className="relative z-10 text-center px-4 max-w-2xl">
+          <div className="relative z-10 text-center px-6 max-w-2xl">
             <h1 className="text-4xl md:text-6xl font-extrabold mb-4">
               Perdre du poids n’a jamais été aussi simple.
             </h1>
@@ -76,9 +78,9 @@ export default function Home() {
         </section>
 
         {/* CE QUE TU TROUVERAS ICI */}
-        <section className="py-20 bg-white text-center">
+        <section className="py-20 bg-white text-center px-6">
           <h2 className="text-3xl font-bold mb-12">Ce que tu trouveras ici</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {features.map((item) => (
               <div
                 key={item.title}
@@ -87,7 +89,9 @@ export default function Home() {
                 <img
                   src={item.img}
                   alt={item.title}
-                  className="mx-auto mb-4 w-30 h-30 object-contain"
+                  className="mx-auto mb-4 w-28 h-28 object-contain"
+                  width="112"
+                  height="112"
                 />
                 <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
                 <p>{item.desc}</p>
@@ -97,7 +101,7 @@ export default function Home() {
         </section>
 
         {/* TÉMOIGNAGES */}
-        <section className="py-20 bg-gray-50 text-center">
+        <section className="py-20 bg-gray-50 text-center px-6">
           <h2 className="text-3xl font-bold mb-10">Elles en parlent mieux que nous</h2>
           <div className="max-w-3xl mx-auto space-y-8 text-gray-700 italic text-lg">
             <p>
@@ -118,12 +122,11 @@ export default function Home() {
         </section>
 
         {/* FAQ */}
-        <section id="faq" className="py-20 bg-white">
+        <section id="faq" className="py-20 bg-white px-6">
           <h2 className="text-3xl font-bold text-center mb-12">
-            On répond à tes{" "}
-            <span className="text-orange-500">questions les plus fréquentes</span>.
+            On répond à tes <span className="text-orange-500">questions les plus fréquentes</span>.
           </h2>
-          <div className="max-w-3xl mx-auto space-y-4 px-4">
+          <div className="max-w-3xl mx-auto space-y-4">
             {faqs.map((item, idx) => {
               const isOpen = openIndex === idx;
               return (
@@ -168,7 +171,7 @@ export default function Home() {
 
           <div className="mt-12 text-center">
             <p className="mb-4 text-gray-700">
-              Une question ? Écris-nous à{" "}
+              Une question ? Écris-nous à {" "}
               <a
                 href="mailto:contact@matransformation.fr"
                 className="text-orange-500 hover:underline"
