@@ -147,7 +147,7 @@ function ListeRecettes() {
 
         {/* Filtres tri */}
 <div className="px-4 sm:px-6">
-  <div className="flex gap-4 justify-center mb-6">
+  <div className="flex flex-wrap gap-4 justify-center mb-6 max-w-lg mx-auto">
     <button onClick={() => setSortOption("calories-asc")} className="bg-blue-100 text-blue-800 px-3 py-1 rounded hover:bg-blue-200">
       🔥 Calories croissant
     </button>
@@ -162,6 +162,7 @@ function ListeRecettes() {
     </button>
   </div>
 </div>
+
 
 
         {/* Recettes */}
