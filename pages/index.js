@@ -8,17 +8,17 @@ export default function Home() {
 
   const features = [
     {
-      img: "https://res.cloudinary.com/diccvjf98/image/upload/v1748247242/recette-matransformation_1_t8be4l.png",
+      img: "https://res.cloudinary.com/diccvjf98/image/upload/f_auto,q_auto/v1748247242/recette-matransformation_1_t8be4l.png",
       title: "Recettes simples et équilibrées",
       desc: "Des idées de repas sains, adaptés à tes objectifs et faciles à suivre au quotidien.",
     },
     {
-      img: "https://res.cloudinary.com/diccvjf98/image/upload/v1748247242/menu-matransformation_1_khgqxd.png",
+      img: "https://res.cloudinary.com/diccvjf98/image/upload/f_auto,q_auto/v1748247242/menu-matransformation_1_khgqxd.png",
       title: "Menus personnalisés",
       desc: "Des plans alimentaires sur-mesure selon ton métabolisme, ton poids et ton objectif.",
     },
     {
-      img: "https://res.cloudinary.com/diccvjf98/image/upload/v1748247242/suivi-matransformation_1_jhkste.png",
+      img: "https://res.cloudinary.com/diccvjf98/image/upload/f_auto,q_auto/v1748247242/suivi-matransformation_1_jhkste.png",
       title: "Suivi de ta progression",
       desc: "Visualise ton évolution semaine après semaine : poids, objectifs atteints, transformation.",
     },
@@ -55,11 +55,13 @@ export default function Home() {
         {/* HERO */}
         <section className="relative flex items-center justify-center text-white bg-orange-500 h-[70vh]">
           <img
-            src="https://res.cloudinary.com/diccvjf98/image/upload/v1748242665/hero_izxaoy.jpg"
+            src="https://res.cloudinary.com/diccvjf98/image/upload/f_auto,q_auto/v1748242665/hero_izxaoy.jpg"
             alt="Bannière"
             className="absolute inset-0 w-full h-full object-cover opacity-50"
             width="1920"
             height="1080"
+            loading="eager"
+            fetchPriority="high"
           />
           <div className="relative z-10 text-center px-6 max-w-2xl">
             <h1 className="text-4xl md:text-6xl font-extrabold mb-4">
@@ -92,6 +94,7 @@ export default function Home() {
                   className="mx-auto mb-4 w-28 h-28 object-contain"
                   width="112"
                   height="112"
+                  loading="lazy"
                 />
                 <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
                 <p>{item.desc}</p>
