@@ -103,7 +103,7 @@ function ListeRecettes() {
   return (
     <>
       <Navbar />
-      <div className="max-w-7xl mx-auto px-6 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 py-6">
         <h1 className="text-3xl font-bold mb-6 text-center">🍴 Toutes nos Recettes</h1>
 
         {/* Barre recherche */}
