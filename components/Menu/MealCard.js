@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import AccompanimentSelector from "./AccompanimentSelector";
 import useSuggestedAccompagnements from "../../hooks/useSuggestedAccompagnements";
+import Image from "next/image";
 
 const REPARTITION = {
   "petit-dejeuner": 0.3,
@@ -203,8 +204,18 @@ export default function MealCard({
       </div>
 
       {recette?.photoUrl && (
-        <img src={recette.photoUrl} alt={recette.name} className="w-full h-28 object-cover rounded-lg mb-3" />
-      )}
+  <div className="w-full h-28 relative mb-3 rounded-lg overflow-hidden">
+    <Image
+      src={recette.photoUrl}
+      alt={recette.name}
+      fill
+      className="object-cover"
+      sizes="(max-width: 768px) 100vw, 33vw"
+      priority={repas.repasType === "petit-dejeuner"} // priorité au premier repas
+    />
+  </div>
+)}
+
       {recette && <p className="font-bold text-center mb-2">{recette.name}</p>}
 
       <div className="mb-4">
