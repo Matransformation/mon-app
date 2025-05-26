@@ -146,20 +146,23 @@ function ListeRecettes() {
         </div>
 
         {/* Filtres tri */}
-        <div className="flex gap-4 justify-center mb-6">
-          <button onClick={() => setSortOption("calories-asc")} className="bg-blue-100 text-blue-800 px-3 py-1 rounded hover:bg-blue-200">
-            🔥 Calories croissant
-          </button>
-          <button onClick={() => setSortOption("calories-desc")} className="bg-blue-100 text-blue-800 px-3 py-1 rounded hover:bg-blue-200">
-            🔥 Calories décroissant
-          </button>
-          <button onClick={() => setSortOption("price-asc")} className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded hover:bg-yellow-200">
-            💶 Prix croissant
-          </button>
-          <button onClick={() => setSortOption("price-desc")} className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded hover:bg-yellow-200">
-            💶 Prix décroissant
-          </button>
-        </div>
+<div className="px-4 sm:px-6">
+  <div className="flex gap-4 justify-center mb-6">
+    <button onClick={() => setSortOption("calories-asc")} className="bg-blue-100 text-blue-800 px-3 py-1 rounded hover:bg-blue-200">
+      🔥 Calories croissant
+    </button>
+    <button onClick={() => setSortOption("calories-desc")} className="bg-blue-100 text-blue-800 px-3 py-1 rounded hover:bg-blue-200">
+      🔥 Calories décroissant
+    </button>
+    <button onClick={() => setSortOption("price-asc")} className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded hover:bg-yellow-200">
+      💶 Prix croissant
+    </button>
+    <button onClick={() => setSortOption("price-desc")} className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded hover:bg-yellow-200">
+      💶 Prix décroissant
+    </button>
+  </div>
+</div>
+
 
         {/* Recettes */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
