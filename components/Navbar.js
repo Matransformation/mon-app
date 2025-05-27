@@ -25,6 +25,9 @@ export default function Navbar() {
           </Link>
 
           <div className="hidden md:flex gap-6">
+          <Link href="/dashboard" className="text-sm text-gray-700 hover:text-green-700 font-medium">
+              Dashboard
+            </Link>
             <Link href="/recettes" className="text-sm text-gray-700 hover:text-green-700 font-medium">
               Recettes
             </Link>
@@ -40,9 +43,10 @@ export default function Navbar() {
             <Link href="/mon-compte" className="text-sm text-gray-700 hover:text-green-700 font-medium">
               Mon compte
             </Link>
-            <Link href="/dashboard" className="text-sm text-gray-700 hover:text-green-700 font-medium">
-              Dashboard
-            </Link>
+            <Link href="/social" className="text-sm text-gray-700 hover:text-green-700 font-medium">
+            Communauté
+          </Link>
+          
           </div>
         </div>
 
@@ -67,6 +71,9 @@ export default function Navbar() {
       {/* Menu mobile déroulant */}
       {menuOpen && (
         <div className="mt-3 flex flex-col gap-3 md:hidden">
+          <Link href="/dashboard" className="text-sm text-gray-700 hover:text-green-700 font-medium">
+            Dashboard
+          </Link>
           <Link href="/recettes" className="text-sm text-gray-700 hover:text-green-700 font-medium">
             Recettes
           </Link>
@@ -82,9 +89,11 @@ export default function Navbar() {
           <Link href="/mon-compte" className="text-sm text-gray-700 hover:text-green-700 font-medium">
             Mon compte
           </Link>
-          <Link href="/dashboard" className="text-sm text-gray-700 hover:text-green-700 font-medium">
-            Dashboard
+          
+          <Link href="/social" className="text-sm text-gray-700 hover:text-green-700 font-medium">
+            Communauté
           </Link>
+         
           <button
             onClick={() => signOut()}
             className="text-sm bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded w-fit"

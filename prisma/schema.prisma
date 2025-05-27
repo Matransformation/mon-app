@@ -1,6 +1,9 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
 }
+
+
 
 datasource db {
   provider = "postgresql"
@@ -48,6 +51,12 @@ model User {
   passwordResetTokens     PasswordResetToken[]
   repasJournaliers        RepasJournalier[]
   sessions                Session[]                @relation("UserSessions")
+  posts     Post[]
+  comments  Comment[]
+  likes     Like[]
+  temoignages  Temoignage[]   // ← relation inverse
+
+
 
   @@map("Utilisateur")
 }
@@ -270,4 +279,47 @@ model Accompagnement {
   menu         MenuJournalier @relation(fields: [menuId], references: [id])
 
   @@unique([menuId, ingredientId], map: "accompagnement_menuid_ingredientid_key")
+}
+
+model Post {
+  id        String   @id @default(cuid()) @db.VarChar(191)
+  content   String   @db.Text
+  imageUrl  String?  @db.VarChar(191)
+  createdAt DateTime @default(now())
+  authorId  String   @db.VarChar(191)
+  author    User     @relation(fields: [authorId], references: [id])
+  comments  Comment[]
+  likes     Like[]
+}
+
+model Comment {
+  id        String   @id @default(cuid()) @db.VarChar(191)
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  authorId  String   @db.VarChar(191)
+  postId    String   @db.VarChar(191)
+  author    User     @relation(fields: [authorId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id])
+}
+
+model Like {
+  id        String   @id @default(cuid()) @db.VarChar(191)
+  userId    String   @db.VarChar(191)
+  postId    String   @db.VarChar(191)
+  user      User     @relation(fields: [userId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id])
+
+  @@unique([userId, postId])
+}
+
+model Temoignage {
+  id        String   @id @default(cuid())
+  content   String
+  photoUrl  String?  // <-- ce champ est optionnel
+  createdAt DateTime @default(now())
+  validated Boolean  @default(false)
+  featured  Boolean  @default(false)
+
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
 }
