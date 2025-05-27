@@ -1,5 +1,4 @@
 import { useState } from "react";
-import axios from "axios";
 
 export default function NewPostForm({ authorId, onPostCreated }) {
   const [content, setContent] = useState("");
@@ -21,14 +20,21 @@ export default function NewPostForm({ authorId, onPostCreated }) {
       formData.append("content", content);
       formData.append("authorId", authorId);
       if (imageFile) {
-        formData.append("image", imageFile); // Le champ doit être "image"
+        formData.append("image", imageFile); // important : correspond à `files.image` dans ton API
       }
 
-      const res = await axios.post("/api/posts", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      const res = await fetch("/api/posts", {
+        method: "POST",
+        body: formData,
       });
 
-      onPostCreated(res.data);
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Erreur inconnue");
+      }
+
+      onPostCreated(data);
       setContent("");
       setImageFile(null);
     } catch (error) {
