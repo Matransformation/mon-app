@@ -1,83 +1,97 @@
-import { PrismaClient } from "@prisma/client";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]";
+import { createClient } from '@supabase/supabase-js';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../auth/[...nextauth]';
 
-const prisma = new PrismaClient();
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
 
   if (!session) {
-    return res.status(401).json({ error: "Non authentifié" });
+    return res.status(401).json({ error: 'Non authentifié' });
   }
-
-  const userId = session.user.id;
-  const isAdmin = session.user.role === "admin";
 
   const { id } = req.query;
+  const userId = session.user.id;
+  const isAdmin = session.user.role === 'admin'; // Assure-toi que `role` est dans ton token/session
 
-  if (!id || typeof id !== "string") {
-    return res.status(400).json({ error: "ID de post invalide" });
+  if (!id || typeof id !== 'string') {
+    return res.status(400).json({ error: 'ID invalide' });
   }
 
-  if (req.method === "DELETE") {
+  if (req.method === 'DELETE') {
     try {
-      const post = await prisma.post.findUnique({ where: { id } });
+      // Vérifie que le post existe
+      const { data: post, error: findError } = await supabase
+        .from('Post')
+        .select('*')
+        .eq('id', id)
+        .single();
 
-      if (!post) {
-        return res.status(404).json({ error: "Post non trouvé" });
+      if (findError || !post) {
+        return res.status(404).json({ error: 'Post non trouvé' });
       }
 
       if (post.authorId !== userId && !isAdmin) {
-        return res.status(403).json({ error: "Accès refusé" });
+        return res.status(403).json({ error: 'Accès refusé' });
       }
 
       // Supprimer les commentaires liés
-      await prisma.comment.deleteMany({
-        where: { postId: id },
-      });
+      await supabase.from('Comment').delete().eq('postId', id);
 
       // Supprimer les likes liés
-      await prisma.like.deleteMany({
-        where: { postId: id },
-      });
+      await supabase.from('Like').delete().eq('postId', id);
 
-      // Puis supprimer le post
-      await prisma.post.delete({ where: { id } });
+      // Supprimer le post
+      await supabase.from('Post').delete().eq('id', id);
 
-      return res.status(200).json({ message: "Post, commentaires et likes supprimés" });
+      return res.status(200).json({ message: 'Post supprimé avec succès' });
     } catch (error) {
-      console.error("Erreur suppression post :", error);
-      return res.status(500).json({ error: "Erreur serveur" });
+      console.error('Erreur DELETE Supabase :', error);
+      return res.status(500).json({ error: 'Erreur serveur' });
     }
   }
 
-  if (req.method === "PUT") {
+  if (req.method === 'PUT') {
     const { content, imageUrl } = req.body;
 
-    if (!content || typeof content !== "string") {
-      return res.status(400).json({ error: "Contenu invalide" });
+    if (!content || typeof content !== 'string') {
+      return res.status(400).json({ error: 'Contenu invalide' });
     }
 
     try {
-      const post = await prisma.post.findUnique({ where: { id } });
-      if (!post) return res.status(404).json({ error: "Post non trouvé" });
+      const { data: post, error: findError } = await supabase
+        .from('Post')
+        .select('*')
+        .eq('id', id)
+        .single();
 
-      if (post.authorId !== userId && !isAdmin) {
-        return res.status(403).json({ error: "Accès refusé" });
+      if (findError || !post) {
+        return res.status(404).json({ error: 'Post non trouvé' });
       }
 
-      const updatedPost = await prisma.post.update({
-        where: { id },
-        data: { content, imageUrl },
-      });
+      if (post.authorId !== userId && !isAdmin) {
+        return res.status(403).json({ error: 'Accès refusé' });
+      }
+
+      const { data: updatedPost, error: updateError } = await supabase
+        .from('Post')
+        .update({ content, imageUrl })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
 
       return res.status(200).json(updatedPost);
     } catch (error) {
-      console.error("Erreur mise à jour post :", error);
-      return res.status(500).json({ error: "Erreur serveur" });
+      console.error('Erreur PUT Supabase :', error);
+      return res.status(500).json({ error: 'Erreur serveur' });
     }
   }
 
-  return res.status(405).json({ error: "Méthode non autorisée" });
+  return res.status(405).json({ error: 'Méthode non autorisée' });
 }
