@@ -1,91 +1,87 @@
-import { useState } from "react";
+import { IncomingForm } from "formidable";
+import fs from "fs";
+import cloudinary from "../../../lib/cloudinary";
+import prisma from "../../../lib/prisma";
 
-export default function NewPostForm({ authorId, onPostCreated }) {
-  const [content, setContent] = useState("");
-  const [imageFile, setImageFile] = useState(null);
-  const [loading, setLoading] = useState(false);
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
-  const handleFileChange = (e) => {
-    setImageFile(e.target.files[0]);
-  };
+export default async function handler(req, res) {
+  if (req.method === "POST") {
+    const form = new IncomingForm({ keepExtensions: true });
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!content.trim()) return;
+    form.parse(req, async (err, fields, files) => {
+      if (err) {
+        console.error("Erreur parsing form:", err);
+        return res.status(500).json({ error: "Erreur d'analyse du formulaire" });
+      }
 
-    setLoading(true);
+      try {
+        const content = fields.content?.[0] || "";
+        const authorId = fields.authorId?.[0] || null;
+        const photoFile = files.image?.[0];
 
+        if (!authorId || !content.trim()) {
+          return res.status(400).json({ error: "Champs requis manquants" });
+        }
+
+        let imageUrl = null;
+        if (photoFile) {
+          const uploadResult = await cloudinary.uploader.upload(photoFile.filepath, {
+            folder: "posts",
+          });
+          imageUrl = uploadResult.secure_url;
+        }
+
+        const newPost = await prisma.post.create({
+          data: {
+            content,
+            authorId,
+            imageUrl,
+          },
+          include: {
+            author: { select: { id: true, name: true, image: true } },
+            comments: {
+              include: {
+                author: { select: { id: true, name: true, image: true } },
+              },
+              orderBy: { createdAt: "asc" },
+            },
+            likes: true,
+          },
+        });
+
+        return res.status(201).json(newPost);
+      } catch (error) {
+        console.error("Erreur création post:", error);
+        return res.status(500).json({ error: "Erreur serveur" });
+      }
+    });
+
+  } else if (req.method === "GET") {
     try {
-      const formData = new FormData();
-      formData.append("content", content);
-      formData.append("authorId", authorId);
-      if (imageFile) {
-        formData.append("image", imageFile); // important : correspond à `files.image` dans ton API
-      }
-
-      const res = await fetch("/api/posts", {
-        method: "POST",
-        body: formData,
+      const posts = await prisma.post.findMany({
+        orderBy: { createdAt: "desc" },
+        include: {
+          author: { select: { id: true, name: true, image: true } },
+          comments: {
+            include: {
+              author: { select: { id: true, name: true, image: true } },
+            },
+            orderBy: { createdAt: "asc" },
+          },
+          likes: true,
+        },
       });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Erreur inconnue");
-      }
-
-      onPostCreated(data);
-      setContent("");
-      setImageFile(null);
+      return res.status(200).json(posts);
     } catch (error) {
-      console.error("Erreur création post :", error);
-      alert("Erreur lors de la création du post.");
-    } finally {
-      setLoading(false);
+      console.error("Erreur GET /posts:", error);
+      return res.status(500).json({ error: "Erreur serveur" });
     }
-  };
+  }
 
-  return (
-    <form
-      onSubmit={handleSubmit}
-      className="max-w-xl mx-auto mb-8 p-6 bg-white rounded-lg shadow-md"
-    >
-      <textarea
-        className="w-full border border-gray-300 rounded-md p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-        placeholder="Exprime-toi..."
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        disabled={loading}
-        rows={4}
-        required
-      />
-      <label
-        htmlFor="image-upload"
-        className="block mt-4 text-gray-700 text-sm cursor-pointer"
-      >
-        {imageFile ? `Image sélectionnée : ${imageFile.name}` : "Ajouter une image (optionnel)"}
-      </label>
-      <input
-        id="image-upload"
-        type="file"
-        accept="image/*"
-        onChange={handleFileChange}
-        className="mt-1 block w-full text-sm text-gray-500
-          file:mr-4 file:py-2 file:px-4
-          file:rounded-md file:border-0
-          file:text-sm file:font-semibold
-          file:bg-blue-50 file:text-blue-700
-          hover:file:bg-blue-100
-          disabled:opacity-50 disabled:cursor-not-allowed"
-        disabled={loading}
-      />
-      <button
-        type="submit"
-        disabled={loading || !content.trim()}
-        className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {loading ? "Publication..." : "Publier"}
-      </button>
-    </form>
-  );
+  return res.status(405).json({ error: "Méthode non autorisée" });
 }
