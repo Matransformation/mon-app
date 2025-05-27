@@ -6,16 +6,16 @@ import { authOptions } from "../auth/[...nextauth]";
 
 export const config = {
   api: {
-    bodyParser: false,
+    bodyParser: false, // important pour formidable
   },
 };
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY // Anon OK si RLS désactivé ou contrôlé côté serveur
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const cloudinaryUpload = async (file) => {
+async function uploadToCloudinary(file) {
   const formData = new FormData();
   formData.append("file", fs.createReadStream(file.filepath));
   formData.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET);
@@ -26,33 +26,27 @@ const cloudinaryUpload = async (file) => {
   });
 
   const data = await res.json();
-  if (!data.secure_url) throw new Error("Échec de l’upload Cloudinary");
+  if (!data.secure_url) throw new Error("Erreur upload Cloudinary");
   return data.secure_url;
-};
+}
 
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
   if (!session) return res.status(401).json({ error: "Non authentifié" });
 
   const { id } = req.query;
-  const userId = session.user.id;
-  const isAdmin = session.user.role === "admin";
-
   if (!id || typeof id !== "string") {
     return res.status(400).json({ error: "ID de post invalide" });
   }
 
-  // 🔁 Mise à jour d’un post
   if (req.method === "PUT") {
     const form = formidable({ multiples: false, keepExtensions: true });
 
     form.parse(req, async (err, fields, files) => {
       if (err) return res.status(500).json({ error: "Erreur parsing formulaire" });
 
-      const { content } = fields;
-      if (!content || typeof content !== "string") {
-        return res.status(400).json({ error: "Contenu requis" });
-      }
+      const content = fields.content;
+      if (!content) return res.status(400).json({ error: "Contenu requis" });
 
       // Vérifier que le post existe
       const { data: post, error: findError } = await supabase
@@ -62,23 +56,20 @@ export default async function handler(req, res) {
         .single();
 
       if (findError || !post) return res.status(404).json({ error: "Post non trouvé" });
-      if (post.authorId !== userId && !isAdmin) {
+      if (post.authorId !== session.user.id && session.user.role !== "admin") {
         return res.status(403).json({ error: "Accès refusé" });
       }
 
       let imageUrl = post.imageUrl;
 
-      // Si une nouvelle image est envoyée → on l’upload
       if (files.photo) {
         try {
-          imageUrl = await cloudinaryUpload(files.photo);
+          imageUrl = await uploadToCloudinary(files.photo);
         } catch (uploadErr) {
-          console.error("Erreur upload image :", uploadErr);
-          return res.status(500).json({ error: "Échec upload image" });
+          return res.status(500).json({ error: "Erreur upload image" });
         }
       }
 
-      // Mise à jour du post
       const { data: updatedPost, error: updateError } = await supabase
         .from("Post")
         .update({ content, imageUrl })
@@ -88,30 +79,13 @@ export default async function handler(req, res) {
 
       if (updateError) return res.status(500).json({ error: "Erreur mise à jour post" });
 
-      return res.status(200).json(updatedPost);
+      res.status(200).json(updatedPost);
     });
+  } else if (req.method === "DELETE") {
+    // Suppression, si tu veux gérer ici
+    // ...
+    res.status(405).json({ error: "Méthode non autorisée" });
+  } else {
+    res.status(405).json({ error: "Méthode non autorisée" });
   }
-
-  // 🗑️ Suppression
-  if (req.method === "DELETE") {
-    const { data: post, error: findError } = await supabase
-      .from("Post")
-      .select("*")
-      .eq("id", id)
-      .single();
-
-    if (findError || !post) return res.status(404).json({ error: "Post non trouvé" });
-    if (post.authorId !== userId && !isAdmin) {
-      return res.status(403).json({ error: "Accès refusé" });
-    }
-
-    // Supprimer les commentaires et likes liés
-    await supabase.from("Comment").delete().eq("postId", id);
-    await supabase.from("Like").delete().eq("postId", id);
-    await supabase.from("Post").delete().eq("id", id);
-
-    return res.status(200).json({ message: "Post supprimé avec succès" });
-  }
-
-  return res.status(405).json({ error: "Méthode non autorisée" });
 }
