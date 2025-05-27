@@ -10,39 +10,22 @@ export default function NewPostForm({ authorId, onPostCreated }) {
     setImageFile(e.target.files[0]);
   };
 
-  const uploadToCloudinary = async () => {
-    const formData = new FormData();
-    formData.append("file", imageFile);
-    formData.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET);
-    formData.append("cloud_name", process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME);
-
-    const res = await fetch(
-      `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-      {
-        method: "POST",
-        body: formData,
-      }
-    );
-
-    const data = await res.json();
-    return data.secure_url;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!content.trim()) return;
 
     setLoading(true);
+
     try {
-      let imageUrl = null;
+      const formData = new FormData();
+      formData.append("content", content);
+      formData.append("authorId", authorId);
       if (imageFile) {
-        imageUrl = await uploadToCloudinary();
+        formData.append("image", imageFile); // Le champ doit être "image"
       }
 
-      const res = await axios.post("/api/posts", {
-        content,
-        authorId,
-        imageUrl,
+      const res = await axios.post("/api/posts", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
       onPostCreated(res.data);
