@@ -1,68 +1,86 @@
-import { createClient } from '@supabase/supabase-js';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '../auth/[...nextauth]';
+import formidable from "formidable";
+import { createClient } from "@supabase/supabase-js";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../auth/[...nextauth]";
+import fs from "fs";
 
-// Initialise Supabase client
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY // ⚠️ Service role requis pour insert côté serveur
+  process.env.SUPABASE_ANON_KEY // autorisé ici car on n’écrit rien côté client
 );
 
-export default async function handler(req, res) {
-  if (req.method === 'GET') {
-    try {
-      const { data, error } = await supabase
-        .from('Post')
-        .select(`
-          *,
-          Utilisateur (id, name, image),
-          Comment (id, content, createdAt, authorId, Utilisateur (id, name, image)),
-          Like (id, userId)
-        `)
-        .order('createdAt', { ascending: false });
+const cloudinaryUpload = async (file) => {
+  const formData = new FormData();
+  formData.append("file", fs.createReadStream(file.filepath));
+  formData.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET);
 
-      if (error) throw error;
-      return res.status(200).json(data);
-    } catch (error) {
-      console.error('Erreur API GET /posts :', error);
-      return res.status(500).json({ error: 'Erreur serveur' });
-    }
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`, {
+    method: "POST",
+    body: formData,
+  });
+
+  const data = await res.json();
+  if (!data.secure_url) throw new Error("Échec de l’upload Cloudinary");
+
+  return data.secure_url;
+};
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Méthode non autorisée" });
   }
 
-  if (req.method === 'POST') {
-    const session = await getServerSession(req, res, authOptions);
-    if (!session) return res.status(401).json({ error: 'Non autorisé' });
+  const session = await getServerSession(req, res, authOptions);
+  if (!session) return res.status(401).json({ error: "Non autorisé" });
 
-    const { content, imageUrl } = req.body;
+  const form = formidable({ multiples: false, keepExtensions: true });
 
-    if (!content) {
-      return res.status(400).json({ error: 'Contenu requis' });
+  form.parse(req, async (err, fields, files) => {
+    if (err) {
+      console.error("Erreur parse formulaire :", err);
+      return res.status(500).json({ error: "Erreur parsing" });
+    }
+
+    const { content } = fields;
+    if (!content || typeof content !== "string") {
+      return res.status(400).json({ error: "Contenu requis" });
+    }
+
+    let imageUrl = null;
+
+    if (files.photo) {
+      try {
+        imageUrl = await cloudinaryUpload(files.photo);
+      } catch (uploadErr) {
+        console.error("Erreur upload Cloudinary :", uploadErr);
+        return res.status(500).json({ error: "Erreur upload image" });
+      }
     }
 
     try {
       const { data, error } = await supabase
-        .from('Post')
+        .from("Post")
         .insert([
           {
             content,
-            imageUrl: imageUrl || null,
+            imageUrl,
             authorId: session.user.id,
           },
         ])
-        .select(`
-          *,
-          Utilisateur (id, name, image),
-          Comment (id, content, createdAt, authorId),
-          Like (id, userId)
-        `);
+        .select()
+        .single();
 
       if (error) throw error;
-      return res.status(201).json(data[0]);
+      return res.status(201).json(data);
     } catch (error) {
-      console.error('Erreur Supabase POST :', error);
-      return res.status(500).json({ error: 'Erreur insertion post' });
+      console.error("Erreur Supabase :", error);
+      return res.status(500).json({ error: "Erreur enregistrement" });
     }
-  }
-
-  return res.status(405).json({ error: 'Méthode non autorisée' });
+  });
 }
