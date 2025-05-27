@@ -20,7 +20,7 @@ export default function CommentForm({ postId, authorId, onAdd }) {
       setContent("");
     } catch (error) {
       console.error("Erreur lors du commentaire :", error);
-      alert("Erreur lors de l’ajout du commentaire.");
+      alert("Erreur lors de l'ajout du commentaire.");
     } finally {
       setLoading(false);
     }
@@ -31,17 +31,11 @@ export default function CommentForm({ postId, authorId, onAdd }) {
       <input
         type="text"
         className="flex-1 border border-gray-300 rounded-md px-4 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition disabled:opacity-50"
-        placeholder="Ajoute un commentaire..."
+        placeholder="Ajouter un commentaire..."
         value={content}
         onChange={(e) => setContent(e.target.value)}
         disabled={loading}
         aria-label="Ajouter un commentaire"
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey && content.trim()) {
-            e.preventDefault();
-            handleSubmit(e);
-          }
-        }}
       />
       <button
         type="submit"
@@ -49,7 +43,7 @@ export default function CommentForm({ postId, authorId, onAdd }) {
         disabled={loading || !content.trim()}
         aria-label="Publier le commentaire"
       >
-        {loading ? "..." : "Publier"}
+        {loading ? "Envoi..." : "Publier"}
       </button>
     </form>
   );

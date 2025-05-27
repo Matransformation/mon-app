@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import PostCard from "../components/Social/PostCard";
 import NewPostForm from "../components/Social/NewPostForm";
-import EditPostForm from "../components/Social/EditPostForm";
 import Navbar from "../components/Navbar";
 
 export default function SocialPage() {
@@ -12,7 +11,6 @@ export default function SocialPage() {
   const [loading, setLoading] = useState(true);
   const [sortOption, setSortOption] = useState("recent");
   const [visibleCount, setVisibleCount] = useState(6); // Pagination locale
-  const [editingPostId, setEditingPostId] = useState(null);
 
   const currentUserId = session?.user?.id;
   const isAdmin = session?.user?.role === "admin";
@@ -40,19 +38,19 @@ export default function SocialPage() {
 
   const handleDeletePost = (id) => {
     setPosts((prev) => prev.filter((p) => p.id !== id));
-    if (editingPostId === id) setEditingPostId(null);
   };
 
   const handleUpdatePost = (updatedPost) => {
-    setPosts((prev) => prev.map((p) => (p.id === updatedPost.id ? updatedPost : p)));
-    setEditingPostId(null);
+    setPosts((prev) =>
+      prev.map((p) => (p.id === updatedPost.id ? updatedPost : p))
+    );
   };
 
   const sortedPosts = [...posts].sort((a, b) => {
     if (sortOption === "likes") return b.likes.length - a.likes.length;
     if (sortOption === "comments") return b.comments.length - a.comments.length;
     if (sortOption === "admin") return b.author?.role === "admin" ? -1 : 1;
-    return new Date(b.createdAt) - new Date(a.createdAt);
+    return new Date(b.createdAt) - new Date(a.createdAt); // default
   });
 
   const visiblePosts = sortedPosts.slice(0, visibleCount);
@@ -96,7 +94,7 @@ export default function SocialPage() {
                 key={value}
                 onClick={() => {
                   setSortOption(value);
-                  setVisibleCount(6);
+                  setVisibleCount(6); // reset pagination on filter
                 }}
                 className={`px-4 py-1 rounded-full text-sm border transition ${
                   sortOption === value
@@ -117,26 +115,16 @@ export default function SocialPage() {
             <p className="text-center text-gray-500 mt-10">Aucun post pour le moment.</p>
           ) : (
             <>
-              {visiblePosts.map((post) =>
-                editingPostId === post.id ? (
-                  <EditPostForm
-                    key={post.id}
-                    post={post}
-                    onPostUpdated={handleUpdatePost}
-                    onCancel={() => setEditingPostId(null)}
-                  />
-                ) : (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    currentUserId={currentUserId}
-                    isAdmin={isAdmin}
-                    onDelete={handleDeletePost}
-                    onUpdate={handleUpdatePost}
-                    onEdit={() => setEditingPostId(post.id)}
-                  />
-                )
-              )}
+              {visiblePosts.map((post) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  currentUserId={currentUserId}
+                  isAdmin={isAdmin}
+                  onDelete={handleDeletePost}
+                  onUpdate={handleUpdatePost}
+                />
+              ))}
 
               {visibleCount < sortedPosts.length && (
                 <div className="flex justify-center mt-6">

@@ -1,15 +1,26 @@
-import { formatDistanceToNow } from "date-fns";
-import { fr } from "date-fns/locale";
+// utils/date.js
 
-/**
- * Retourne une chaîne "il y a 2h", "il y a 3 jours", etc.
- * @param {string|Date} date
- * @returns {string}
- */
-export function formatTimeAgo(date) {
-  if (!date) return "";
-  return formatDistanceToNow(new Date(date), {
-    addSuffix: true,
-    locale: fr,
-  });
-}
+export function formatTimeAgo(dateInput) {
+    const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+  
+    const intervals = [
+      { label: "an", seconds: 31536000 },
+      { label: "mois", seconds: 2592000 },
+      { label: "jour", seconds: 86400 },
+      { label: "heure", seconds: 3600 },
+      { label: "minute", seconds: 60 },
+      { label: "seconde", seconds: 1 },
+    ];
+  
+    for (const interval of intervals) {
+      const count = Math.floor(seconds / interval.seconds);
+      if (count > 0) {
+        return `il y a ${count} ${interval.label}${count > 1 ? "s" : ""}`;
+      }
+    }
+  
+    return "à l’instant";
+  }
+  

@@ -1,62 +1,69 @@
-import formidable from "formidable";
-import fs from "fs";
-import { createClient } from "@supabase/supabase-js";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../auth/[...nextauth]";
+// pages/api/posts/index.js
 
-export const config = { api: { bodyParser: false } };
+import { PrismaClient } from "@prisma/client";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
-async function uploadToCloudinary(file) {
-  const formData = new FormData();
-  formData.append("file", fs.createReadStream(file.filepath));
-  formData.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET);
-
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`, {
-    method: "POST",
-    body: formData,
-  });
-
-  const data = await res.json();
-  if (!data.secure_url) throw new Error("Erreur upload Cloudinary");
-  return data.secure_url;
-}
+const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).end();
+  if (req.method === "GET") {
+    try {
+      const posts = await prisma.post.findMany({
+        orderBy: { createdAt: "desc" },
+        include: {
+          author: {
+            select: { id: true, name: true, image: true }
+          },
+          comments: {
+            include: {
+              author: {
+                select: { id: true, name: true, image: true }
+              }
+            },
+            orderBy: { createdAt: "asc" }
+          },
+          likes: true,
+        },
+      });
 
-  const session = await getServerSession(req, res, authOptions);
-  if (!session) return res.status(401).json({ error: "Non autorisé" });
+      return res.status(200).json(posts);
+    } catch (error) {
+      console.error("Erreur API GET /posts :", error);
+      return res.status(500).json({ error: "Erreur serveur" });
+    }
+  }
 
-  const form = formidable({ multiples: false, keepExtensions: true });
+  if (req.method === "POST") {
+    const { content, authorId, imageUrl = null } = req.body;
 
-  form.parse(req, async (err, fields, files) => {
-    if (err) return res.status(500).json({ error: "Erreur parsing formulaire" });
-
-    const content = fields.content;
-    if (!content) return res.status(400).json({ error: "Contenu requis" });
-
-    let imageUrl = null;
-    if (files.photo) {
-      try {
-        imageUrl = await uploadToCloudinary(files.photo);
-      } catch (error) {
-        return res.status(500).json({ error: "Erreur upload image" });
-      }
+    if (!authorId || !content) {
+      return res.status(400).json({ error: "Champs requis manquants" });
     }
 
-    const { data, error } = await supabase
-      .from("Post")
-      .insert([{ content, imageUrl, authorId: session.user.id }])
-      .select()
-      .single();
+    try {
+      const post = await prisma.post.create({
+        data: {
+          content,
+          authorId,
+          imageUrl, // peut être null
+        },
+        include: {
+          author: { select: { id: true, name: true, image: true } },
+          comments: {
+            include: {
+              author: { select: { id: true, name: true, image: true } },
+            },
+            orderBy: { createdAt: "asc" },
+          },
+          likes: true,
+        },
+      });
 
-    if (error) return res.status(500).json({ error: error.message });
+      return res.status(201).json(post);
+    } catch (error) {
+      console.error("Erreur API POST /posts :", error);
+      return res.status(500).json({ error: "Erreur serveur lors de la création du post" });
+    }
+  }
 
-    res.status(201).json(data);
-  });
+  return res.status(405).json({ error: "Méthode non autorisée" });
 }
