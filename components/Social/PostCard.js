@@ -140,18 +140,19 @@ export default function PostCard({ post, currentUserId, isAdmin = false, onDelet
           </>
         ) : (
           <>
-            {editImageUrl && (
-              <div className="relative w-full max-h-[500px] rounded-md overflow-hidden mb-4">
-                <Image
-                  src={editImageUrl}
-                  alt={editContent.slice(0, 30) || "Image du post"}
-                  layout="responsive"
-                  width={700}
-                  height={500}
-                  objectFit="cover"
-                />
-              </div>
-            )}
+            {post.imageUrl && (
+                <div className="relative w-full max-h-[500px] rounded-md overflow-hidden mb-4">
+                  <Image
+                    src={post.imageUrl}
+                    alt={editContent.slice(0, 30) || "Image du post"}
+                    layout="responsive"
+                    width={700}
+                    height={500}
+                    objectFit="cover"
+                  />
+                </div>
+              )}
+              
             <p className="text-gray-800 whitespace-pre-line">{editContent}</p>
           </>
         )}
