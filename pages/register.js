@@ -10,7 +10,6 @@ export default function Register() {
     email: "",
     password: "",
     confirm: "",
-    phone: "",
     birthdate: "",
     gender: "",
   });
@@ -36,7 +35,6 @@ export default function Register() {
         name: `${form.firstName} ${form.lastName}`,
         email: form.email,
         password: form.password,
-        phone: form.phone,
         birthdate: form.birthdate,
         gender: form.gender,
       };
@@ -133,22 +131,7 @@ export default function Register() {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Numéro de téléphone</label>
-              <div className="flex">
-                <span className="inline-flex items-center px-3 rounded-l border border-r-0 border-gray-300 bg-gray-100 text-gray-600">
-                  🇫🇷 +33
-                </span>
-                <input
-                  name="phone"
-                  type="tel"
-                  value={form.phone}
-                  onChange={handleChange}
-                  required
-                  className="flex-1 border border-gray-300 rounded-r px-3 py-2 focus:outline-none focus:border-orange-500"
-                />
-              </div>
-            </div>
+          
 
             <div>
               <label className="block text-sm font-medium mb-1">Date de naissance</label>

@@ -101,7 +101,13 @@ export default function VerifyEmailPage() {
           >
             Renvoyer le code
           </button>
+          <div className="mt-6 border border-yellow-400 bg-yellow-50 text-yellow-800 p-4 rounded text-sm">
+  <strong>Tu n’as pas reçu le code ?</strong><br />
+  Pas de panique ! Tu peux quand même <Link href="/login" className="underline font-medium text-yellow-700">te connecter depuis cette page</Link> si besoin.<br />
+</div>
+
         </div>
+        
 
         {/* === ASIDE PROMO === */}
         <div className="hidden md:flex w-full md:w-1/2 bg-[#FE8C15]/10 p-8 lg:p-16 items-center">
