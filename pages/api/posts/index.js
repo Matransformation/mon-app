@@ -1,9 +1,10 @@
 // pages/api/posts/index.js
 
+import prisma from "../../../lib/prisma";
 import { IncomingForm } from "formidable";
 import cloudinary from "../../../lib/cloudinary";
 import fs from "fs";
-import prisma from "../../../lib/prisma";
+import path from "path";
 
 export const config = {
   api: {
@@ -17,23 +18,22 @@ export default async function handler(req, res) {
 
     form.parse(req, async (err, fields, files) => {
       if (err) {
-        console.error("Erreur parsing form:", err);
-        return res.status(500).json({ error: "Erreur d'analyse du formulaire" });
+        console.error("Erreur parsing formulaire :", err);
+        return res.status(500).json({ error: "Erreur lors de l'upload du fichier" });
       }
 
       try {
         const content = fields.content?.[0] || "";
         const authorId = fields.authorId?.[0] || null;
-        const photoFile = files.image?.[0];
+        const imageFile = files.image?.[0];
 
         if (!authorId || !content.trim()) {
           return res.status(400).json({ error: "Champs requis manquants" });
         }
 
         let imageUrl = null;
-
-        if (photoFile) {
-          const uploadResult = await cloudinary.uploader.upload(photoFile.filepath, {
+        if (imageFile) {
+          const uploadResult = await cloudinary.uploader.upload(imageFile.filepath, {
             folder: "posts",
           });
           imageUrl = uploadResult.secure_url;
@@ -59,8 +59,11 @@ export default async function handler(req, res) {
 
         return res.status(201).json(newPost);
       } catch (error) {
-        console.error("Erreur lors de la création du post:", error);
-        return res.status(500).json({ error: "Erreur serveur lors de la création du post" });
+        console.error("Erreur Prisma création post :", error);
+        return res.status(500).json({
+          error: "Erreur lors de la création du post",
+          details: error.message,
+        });
       }
     });
   }
@@ -87,5 +90,6 @@ export default async function handler(req, res) {
     }
   }
 
-  return res.status(405).json({ error: "Méthode non autorisée" });
+  res.setHeader("Allow", ["GET", "POST"]);
+  return res.status(405).json({ error: `Méthode ${req.method} non autorisée` });
 }
