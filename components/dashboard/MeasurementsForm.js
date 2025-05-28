@@ -16,9 +16,7 @@ export default function MeasurementsForm({ onSave }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // onSave renvoie l'objet créé { id, date, ... }
     await onSave(form);
-    // reset
     setForm({
       taille: "",
       hanches: "",
@@ -35,16 +33,23 @@ export default function MeasurementsForm({ onSave }) {
       <h2 className="text-lg font-semibold mb-4">Ajouter une mensuration</h2>
       <div className="grid grid-cols-2 gap-3">
         {Object.entries(form).map(([key, val]) => (
-          <input
-            key={key}
-            name={key}
-            type="number"
-            placeholder={key}
-            value={val}
-            onChange={handleChange}
-            className="border p-2 rounded"
-            required
-          />
+          <div key={key} className="flex flex-col col-span-1">
+            <input
+              name={key}
+              type="number"
+              placeholder={key}
+              value={val}
+              onChange={handleChange}
+              className="border p-2 rounded"
+              required
+            />
+            {key === "masseGrasse" && (
+              <p className="text-xs text-gray-500 mt-1">
+                Si vous ne connaissez pas votre masse grasse, indiquez un chiffre approximatif.
+                Elle peut être mesurée avec une balance impédancemètre.
+              </p>
+            )}
+          </div>
         ))}
       </div>
       <button
