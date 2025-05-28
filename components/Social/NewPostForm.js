@@ -6,12 +6,17 @@ export default function NewPostForm({ authorId, onPostCreated }) {
   const [loading, setLoading] = useState(false);
 
   const handleFileChange = (e) => {
-    setImageFile(e.target.files[0]);
+    const file = e.target.files[0];
+    console.log("📷 Image sélectionnée :", file);
+    setImageFile(file);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!content.trim()) return;
+    if (!content.trim()) {
+      console.warn("⚠️ Contenu vide !");
+      return;
+    }
 
     setLoading(true);
 
@@ -20,18 +25,18 @@ export default function NewPostForm({ authorId, onPostCreated }) {
       formData.append("content", content);
       formData.append("authorId", authorId);
       if (imageFile) {
-        formData.append("image", imageFile); // important : correspond à `files.image` dans ton API
+        formData.append("image", imageFile);
+        console.log("📤 Ajout de l'image au FormData :", imageFile.name);
       }
 
-      // 🔍 DEBUG : voir si le fichier est bien là
-      console.log("imageFile =", imageFile);
-
+      console.log("📨 Envoi du post...");
       const res = await fetch("/api/posts", {
         method: "POST",
         body: formData,
       });
 
       const data = await res.json();
+      console.log("📬 Réponse API :", data);
 
       if (!res.ok) {
         throw new Error(data.error || "Erreur inconnue");
@@ -41,8 +46,8 @@ export default function NewPostForm({ authorId, onPostCreated }) {
       setContent("");
       setImageFile(null);
     } catch (error) {
-      console.error("Erreur création post :", error);
-      alert("Erreur lors de la création du post.");
+      console.error("❌ Erreur création post :", error);
+      alert("Erreur lors de la création du post : " + error.message);
     } finally {
       setLoading(false);
     }
