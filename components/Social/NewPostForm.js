@@ -20,8 +20,11 @@ export default function NewPostForm({ authorId, onPostCreated }) {
       formData.append("content", content);
       formData.append("authorId", authorId);
       if (imageFile) {
-        formData.append("image", imageFile); // ce champ doit correspondre à `files.image` côté API
+        formData.append("image", imageFile); // important : correspond à `files.image` dans ton API
       }
+
+      // 🔍 DEBUG : voir si le fichier est bien là
+      console.log("imageFile =", imageFile);
 
       const res = await fetch("/api/posts", {
         method: "POST",
