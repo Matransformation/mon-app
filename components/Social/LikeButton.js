@@ -10,8 +10,8 @@ export default function LikeButton({ postId, userId, isLiked, likes, onUpdate })
     setLoading(true);
 
     try {
-      const res = await axios.post(`/api/likes/index`, {
-        postId,
+        const res = await axios.post(`/api/likes`, {
+            postId,
         userId,
       });
 
