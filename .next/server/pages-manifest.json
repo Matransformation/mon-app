@@ -1,9 +1,13 @@
 {
   "/_app": "pages/_app.js",
-  "/_document": "pages/_document.js",
   "/_error": "pages/_error.js",
+  "/_document": "pages/_document.js",
   "/menu": "pages/menu.js",
   "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
-  "/api/utilisateur/mensurations": "pages/api/utilisateur/mensurations.js",
-  "/dashboard": "pages/dashboard.js"
+  "/api/menu/[userId]": "pages/api/menu/[userId].js",
+  "/api/recettes": "pages/api/recettes.js",
+  "/api/utilisateur/[id]": "pages/api/utilisateur/[id].js",
+  "/recettes": "pages/recettes.js",
+  "/api/menu/repas/[id]": "pages/api/menu/repas/[id].js",
+  "/mes-favoris": "pages/mes-favoris.js"
 }

@@ -215,6 +215,16 @@ export default function MealCard({
     />
   </div>
 )}
+{recette?.id && (
+  <div className="mb-4 text-center">
+    <a
+      href={`/recettes/${recette.id}`}
+      className="inline-block bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded"
+    >
+      Voir la recette
+    </a>
+  </div>
+)}
 
       {recette && <p className="font-bold text-center mb-2">{recette.name}</p>}
 
@@ -226,7 +236,7 @@ export default function MealCard({
       </div>
 
       {calCon >= calObj * 0.7 && <div className="bg-green-100 border border-green-400 text-green-700 p-3 rounded mb-4 text-sm text-center">🎉 Parfait, ton repas est validé, tu n'es pas obligé d'ajouter d'autres accompagnements !</div>}
-      {requireVegetable && <div className="bg-red-100 border border-red-400 text-red-700 p-3 rounded mb-4 text-sm">Choix obligatoire d’un légume (150 g).</div>}
+      {requireVegetable && <div className="bg-red-100 border border-red-400 text-red-700 p-3 rounded mb-4 text-sm">Choix obligatoire d’un légume (150 g), si pas de légumes dans la recette.</div>}
 
       {recette && (
         <div className="mb-4">
