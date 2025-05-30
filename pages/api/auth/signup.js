@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: 'Méthode non autorisée' })
   }
 
-  const { name, email, password, phone, birthdate, gender } = req.body
+  const { name, email, password } = req.body
 
   if (!email || !password || !name) {
     return res.status(422).json({ message: 'Nom, email et mot de passe requis' })
@@ -28,15 +28,11 @@ export default async function handler(req, res) {
     const hashed = await hashPassword(password)
     const trialEndsAt = addDays(new Date(), 7) // Période d'essai de 7 jours
 
-    // Création de l'utilisateur
     const user = await prisma.user.create({
       data: {
         name,
         email,
         password: hashed,
-        phone,
-        birthdate: new Date(birthdate),
-        sexe: gender,
         trialEndsAt,
         isSubscribed: false,
       }
@@ -46,7 +42,6 @@ export default async function handler(req, res) {
     const token = randomBytes(3).toString('hex').toUpperCase()
     const expiresAt = addHours(new Date(), 1)
 
-    // Supprimer les anciens tokens et créer le nouveau
     await prisma.emailVerificationToken.deleteMany({ where: { userId: user.id } })
     await prisma.emailVerificationToken.create({
       data: { userId: user.id, token, expiresAt }
@@ -95,7 +90,6 @@ L'équipe Ma Transformation
       html
     })
 
-    // 5) Réponse succès
     return res.status(201).json({ message: 'Utilisateur créé. Un email de vérification a été envoyé.' })
   } catch (err) {
     console.error('Signup error:', err)

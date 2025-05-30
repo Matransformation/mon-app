@@ -10,8 +10,6 @@ export default function Register() {
     email: "",
     password: "",
     confirm: "",
-    birthdate: "",
-    gender: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -35,8 +33,6 @@ export default function Register() {
         name: `${form.firstName} ${form.lastName}`,
         email: form.email,
         password: form.password,
-        birthdate: form.birthdate,
-        gender: form.gender,
       };
 
       const res = await fetch("/api/auth/signup", {
@@ -63,9 +59,7 @@ export default function Register() {
       <div className="flex flex-col-reverse md:flex-row flex-1">
         {/* FORMULAIRE */}
         <div className="w-full md:w-1/2 p-8 lg:p-16">
-          <h2 className="text-3xl font-bold mb-8">
-            Crée ton compte gratuitement
-          </h2>
+          <h2 className="text-3xl font-bold mb-8">Crée ton compte gratuitement</h2>
           {error && <p className="text-red-600 mb-4">{error}</p>}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="flex space-x-4">
@@ -118,9 +112,7 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">
-                Confirmer mot de passe
-              </label>
+              <label className="block text-sm font-medium mb-1">Confirmer mot de passe</label>
               <input
                 name="confirm"
                 type="password"
@@ -129,36 +121,6 @@ export default function Register() {
                 required
                 className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-orange-500"
               />
-            </div>
-
-          
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Date de naissance</label>
-              <input
-                name="birthdate"
-                type="date"
-                value={form.birthdate}
-                onChange={handleChange}
-                required
-                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-orange-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Genre</label>
-              <select
-                name="gender"
-                value={form.gender}
-                onChange={handleChange}
-                required
-                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-orange-500"
-              >
-                <option value="">Sélectionner</option>
-                <option>Homme</option>
-                <option>Femme</option>
-                <option>Autre</option>
-              </select>
             </div>
 
             <button

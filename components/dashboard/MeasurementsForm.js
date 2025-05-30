@@ -30,7 +30,7 @@ export default function MeasurementsForm({ onSave }) {
 
   return (
     <form onSubmit={handleSubmit} className="bg-white shadow p-6 rounded">
-      <h2 className="text-lg font-semibold mb-4">Ajouter une mensuration</h2>
+      <h2 className="text-lg font-semibold mb-4">Ajouter une mensuration (vous n'êtes pas obligé, si vous n'avez pas de quoi le faire) pour suivre votre évolution</h2>
       <div className="grid grid-cols-2 gap-3">
         {Object.entries(form).map(([key, val]) => (
           <div key={key} className="flex flex-col col-span-1">

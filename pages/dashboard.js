@@ -131,6 +131,31 @@ function Dashboard({ utilisateur }) {
         <Card className="md:col-span-2">
           <MeasurementsForm onSave={handleAddMensu} />
         </Card>
+        {/* ✅ Bloc final incitatif après avoir ajouté poids ou mensurations */}
+<div className="mt-12 text-center bg-orange-50 border border-orange-200 p-6 rounded-xl shadow-sm">
+  <h3 className="text-xl font-semibold text-orange-600 mb-2">
+    Bravo ! 🎉
+  </h3>
+  <p className="text-gray-700 mb-4">
+    Vous avez ajouté vos informations (Mensurations optionnelles). Vous êtes maintenant prêt·e à découvrir nos :
+  </p>
+
+  <div className="flex flex-col sm:flex-row justify-center gap-4">
+    <a
+      href="/recettes"
+      className="bg-orange-500 text-white font-medium px-6 py-3 rounded-lg hover:bg-orange-600 transition"
+    >
+      Recettes
+    </a>
+    <a
+      href="/menu"
+      className="bg-gray-800 text-white font-medium px-6 py-3 rounded-lg hover:bg-gray-900 transition"
+    >
+      Menu personnalisé
+    </a>
+  </div>
+</div>
+
       </div>
     </div>
   );
