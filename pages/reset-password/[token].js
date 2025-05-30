@@ -1,50 +1,65 @@
 // pages/reset-password/[token].js
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 
 export default function ResetPassword() {
   const router = useRouter()
   const { token } = router.query
+
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    setError('')
+    setMessage('')
+
+    if (!token) {
+      setError('Lien de réinitialisation invalide ou expiré.')
+      return
+    }
+
     if (password !== confirm) {
       setError('Les mots de passe ne correspondent pas')
       return
     }
-    setError('')
+
+    setLoading(true)
     try {
       const res = await fetch('/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, password }),
       })
+
       const data = await res.json()
+
       if (!res.ok) {
-        setError(data.message)
+        setError(data.message || 'Erreur serveur.')
       } else {
-        setMessage(data.message)
+        setMessage(data.message || 'Mot de passe réinitialisé avec succès.')
       }
-    } catch {
+    } catch (err) {
       setError('Erreur réseau, veuillez réessayer.')
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <form className="bg-white p-8 rounded shadow-md w-full max-w-sm">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white p-8 rounded shadow-md w-full max-w-sm"
+      >
         <h2 className="text-2xl font-bold mb-4 text-center">
           Réinitialiser le mot de passe
         </h2>
 
-        {/* Affichage de l'erreur */}
-        {error && <p className="text-red-600 mb-2">{error}</p>}
-
-        {/* Après succès, on affiche le message + bouton retour */}
+        {error && <p className="text-red-600 mb-4 text-center">{error}</p>}
         {message ? (
           <>
             <p className="text-green-600 mb-4 text-center">{message}</p>
@@ -61,7 +76,7 @@ export default function ResetPassword() {
             <input
               type="password"
               value={password}
-              onChange={e => setPassword(e.target.value)}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="Nouveau mot de passe"
               required
               className="w-full border px-3 py-2 rounded mb-2"
@@ -69,17 +84,19 @@ export default function ResetPassword() {
             <input
               type="password"
               value={confirm}
-              onChange={e => setConfirm(e.target.value)}
+              onChange={(e) => setConfirm(e.target.value)}
               placeholder="Confirmer mot de passe"
               required
               className="w-full border px-3 py-2 rounded mb-4"
             />
             <button
               type="submit"
-              onClick={handleSubmit}
-              className="w-full bg-orange-500 text-white py-2 rounded hover:bg-orange-600 transition"
+              disabled={loading}
+              className={`w-full bg-orange-500 text-white py-2 rounded transition ${
+                loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-orange-600'
+              }`}
             >
-              Valider
+              {loading ? 'Envoi en cours...' : 'Valider'}
             </button>
           </>
         )}

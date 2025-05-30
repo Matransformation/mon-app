@@ -21,11 +21,11 @@ export default async function handler(req, res) {
     // 1) Vérifier l’utilisateur
     const user = await prisma.user.findUnique({ where: { email } })
 
-    // Toujours répondre 200 pour ne pas divulguer l’existence du compte
+    // Réponse standard même si l'utilisateur n'existe pas (mais ici tu préfères afficher un message clair)
     if (!user) {
       return res
-        .status(200)
-        .json({ message: 'Si l’email existe, un lien a été envoyé.' })
+        .status(404)
+        .json({ message: "Aucun compte n'est associé à cette adresse email." })
     }
 
     // 2) Générer le token et sa date d’expiration
@@ -42,34 +42,28 @@ export default async function handler(req, res) {
 
     // 5) Envoyer l’email
     const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password/${token}`
-    try {
-      await sgMail.send({
-        to: email,
-        from: process.env.EMAIL_FROM,
-        subject: '🔒 Réinitialisation de votre mot de passe',
-        html: `
-          <p>Bonjour,</p>
-          <p>Vous avez demandé la réinitialisation de votre mot de passe.</p>
-          <p>
-            Cliquez <a href="${resetUrl}">ici</a> pour en choisir un nouveau.
-            Le lien expire dans 1 heure.
-          </p>
-          <p>Si vous n’êtes pas à l’origine de cette demande, ignorez ce message.</p>
-          <br/>
-          <p>— L’équipe MaTransformation</p>
-        `,
-      })
-    } catch (emailError) {
-      console.error('SendGrid error details:', JSON.stringify(emailError.response?.body, null, 2))
-      return res.status(500).json({
-        message: 'Erreur lors de l’envoi de l’email',
-        detail: emailError.response?.body || emailError.message,
-      })
-    }
 
-    return res
-      .status(200)
-      .json({ message: 'Si l’email existe, un lien a été envoyé.' })
+    await sgMail.send({
+      to: email,
+      from: {
+        email: process.env.EMAIL_FROM,
+        name: 'Ma Transformation',
+      },
+      subject: 'Réinitialisation de votre mot de passe',
+      html: `
+        <p>Bonjour,</p>
+        <p>Vous avez demandé la réinitialisation de votre mot de passe.</p>
+        <p>
+          Cliquez <a href="${resetUrl}">ici</a> pour en choisir un nouveau.
+          Le lien expire dans 1 heure.
+        </p>
+        <p>Si vous n’êtes pas à l’origine de cette demande, ignorez ce message.</p>
+        <br/>
+        <p>— L’équipe MaTransformation</p>
+      `,
+    })
+
+    return res.status(200).json({ message: 'Si l’email existe, un lien a été envoyé.' })
   } catch (error) {
     console.error('Erreur forgot-password:', error)
     return res
