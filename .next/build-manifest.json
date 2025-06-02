@@ -23,25 +23,15 @@
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/dashboard": [
+    "/social": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/dashboard.js"
+      "static/chunks/pages/social.js"
     ],
-    "/forgot-password": [
+    "/videos": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/forgot-password.js"
-    ],
-    "/login": [
-      "static/chunks/webpack.js",
-      "static/chunks/main.js",
-      "static/chunks/pages/login.js"
-    ],
-    "/reset-password/[token]": [
-      "static/chunks/webpack.js",
-      "static/chunks/main.js",
-      "static/chunks/pages/reset-password/[token].js"
+      "static/chunks/pages/videos.js"
     ]
   },
   "ampFirstPages": []

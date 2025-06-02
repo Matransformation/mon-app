@@ -48,6 +48,12 @@ export default function Navbar() {
               <Link href="/social" className="text-sm text-gray-700 hover:text-green-700 font-medium">
                 Communauté
               </Link>
+              <Link
+          href="/videos"
+          className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 py-1 rounded"
+        >
+          Tutoriels vidéos
+        </Link>
             </div>
           </div>
 
@@ -94,6 +100,12 @@ export default function Navbar() {
             <Link href="/social" className="text-sm text-gray-700 hover:text-green-700 font-medium">
               Communauté
             </Link>
+            <Link
+          href="/videos"
+          className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 py-1 rounded"
+        >
+          Tutoriels vidéos
+        </Link>
             <button
               onClick={() => signOut()}
               className="text-sm bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded w-fit"
@@ -123,6 +135,12 @@ export default function Navbar() {
           className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 py-1 rounded"
         >
           Liste de courses
+        </Link>
+        <Link
+          href="/videos"
+          className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 py-1 rounded"
+        >
+          Tutoriels vidéos
         </Link>
       </div>
     </>
