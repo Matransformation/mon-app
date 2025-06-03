@@ -1,15 +1,14 @@
 // pages/server-sitemap.xml.js
 
 import { getServerSideSitemap } from 'next-sitemap';
-import { prisma } from "../../lib/prisma";
+import { prisma } from '../../lib/prisma';
 
 export async function getServerSideProps(ctx) {
   const recettes = await prisma.recette.findMany({
     where: {
-      isPublic: true, // ce champ doit exister et être bien renseigné
+      isPublic: true, // Assure-toi que ce champ existe dans ton modèle
     },
     select: {
-      id: true,
       slug: true,
       updatedAt: true,
     },
@@ -25,4 +24,5 @@ export async function getServerSideProps(ctx) {
   return getServerSideSitemap(ctx, fields);
 }
 
+// Ce composant est requis mais vide, c’est normal
 export default function Sitemap() {}
