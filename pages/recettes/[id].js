@@ -96,38 +96,51 @@ function RecetteDetail() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Head>
-        <title>{recette.name} | MaTransformation</title>
-        <meta name="description" content={`Découvrez cette recette de ${recette.name}`} />
-        <meta property="og:title" content={`${recette.name} | MaTransformation`} />
-        <meta property="og:description" content={`Découvrez cette recette de ${recette.name}`} />
-        <meta property="og:image" content={recette.photoUrl || "/images/placeholder.png"} />
-        <meta property="og:type" content="article" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={`${recette.name} | MaTransformation`} />
-        <meta name="twitter:description" content={`Découvrez cette recette de ${recette.name}`} />
-        <meta name="twitter:image" content={recette.photoUrl || "/images/placeholder.png"} />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "Recipe",
-              name: recette.name,
-              image: recette.photoUrl || "/images/placeholder.png",
-              description: recette.description,
-              recipeIngredient: recette.ingredients.map((ri) => `${ri.quantity} ${ri.unit} ${ri.ingredient.name}`),
-              recipeInstructions: recette.steps.map((s) => s.step),
-              nutrition: {
-                "@type": "NutritionInformation",
-                calories: `${calories} kcal`,
-                proteinContent: `${proteins} g`,
-                fatContent: `${fats} g`,
-                carbohydrateContent: `${carbs} g`,
-              },
-            }),
-          }}
-        />
-      </Head>
+  <title>Découvrez la recette de {recette.name} | MaTransformation</title>
+  <meta
+    name="description"
+    content={`Découvrez cette recette de ${recette.name}, idéale pour atteindre vos objectifs nutritionnels. Temps de préparation : ${recette.preparationTime} min.`}
+  />
+  <link rel="canonical" href={`https://matransformation.fr/recettes/${recette.slug || recette.id}`} />
+  <meta name="robots" content="index, follow" />
+
+  {/* Open Graph pour Facebook */}
+  <meta property="og:title" content={`Recette : ${recette.name} | MaTransformation`} />
+  <meta property="og:description" content={`Découvrez cette recette saine et gourmande !`} />
+  <meta property="og:image" content={recette.photoUrl || "/images/placeholder.png"} />
+  <meta property="og:url" content={`https://matransformation.fr/recettes/${recette.slug || recette.id}`} />
+  <meta property="og:type" content="article" />
+
+  {/* Twitter Card */}
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={`Recette : ${recette.name} | MaTransformation`} />
+  <meta name="twitter:description" content={`Découvrez cette recette saine et gourmande !`} />
+  <meta name="twitter:image" content={recette.photoUrl || "/images/placeholder.png"} />
+
+  {/* JSON-LD Schema.org */}
+  <script
+    type="application/ld+json"
+    dangerouslySetInnerHTML={{
+      __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "Recipe",
+        name: recette.name,
+        image: recette.photoUrl || "/images/placeholder.png",
+        description: recette.description,
+        recipeIngredient: recette.ingredients.map((ri) => `${ri.quantity} ${ri.unit} ${ri.ingredient.name}`),
+        recipeInstructions: recette.steps.map((s) => s.step),
+        nutrition: {
+          "@type": "NutritionInformation",
+          calories: `${calories} kcal`,
+          proteinContent: `${proteins} g`,
+          fatContent: `${fats} g`,
+          carbohydrateContent: `${carbs} g`,
+        },
+      }),
+    }}
+  />
+</Head>
+
 
       <Navbar />
 
