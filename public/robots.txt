@@ -1,6 +1,13 @@
 # *
 User-agent: *
-Allow: /
+Disallow: /admin/*
+Disallow: /dashboard
+Disallow: /menu
+Disallow: /mon-compte
+Disallow: /mes-favoris
+Disallow: /unauthorized
+Disallow: /verify-email
+Disallow: /success
 
 # Host
 Host: https://matransformation.fr

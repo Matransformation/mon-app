@@ -1,5 +1,3 @@
-// pages/api/recettes/[id].js
-
 import { IncomingForm } from "formidable";
 import prisma from "../../../lib/prisma";
 import cloudinary from "../../../lib/cloudinary";
@@ -20,11 +18,13 @@ export default async function handler(req, res) {
           allowedSides: true,
         },
       });
+
       if (!recette) return res.status(404).json({ error: "Recette non trouvée" });
+
       return res.status(200).json({
         ...recette,
         scalable: recette.scalable,
-        allowedSides: recette.allowedSides.map(a => a.sideType),
+        allowedSides: recette.allowedSides.map((a) => a.sideType),
       });
     } catch (error) {
       console.error("GET /api/recettes/[id] error:", error);
@@ -84,7 +84,7 @@ export default async function handler(req, res) {
 
         if (ingredients.length) {
           await prisma.recetteIngredient.createMany({
-            data: ingredients.map(ing => ({
+            data: ingredients.map((ing) => ({
               recetteId: id,
               ingredientId: ing.id,
               quantity: parseFloat(ing.quantity),
@@ -98,13 +98,13 @@ export default async function handler(req, res) {
             where: { id: { in: categories } },
           });
           await prisma.recetteCategory.createMany({
-            data: validCats.map(c => ({ recetteId: id, categoryId: c.id })),
+            data: validCats.map((c) => ({ recetteId: id, categoryId: c.id })),
           });
         }
 
         if (allowedSides.length) {
           await prisma.recetteAllowedSide.createMany({
-            data: allowedSides.map(st => ({ recetteId: id, sideType: st })),
+            data: allowedSides.map((st) => ({ recetteId: id, sideType: st })),
           });
         }
 
@@ -120,7 +120,7 @@ export default async function handler(req, res) {
         return res.status(200).json({
           ...updated,
           scalable: updated.scalable,
-          allowedSides: updated.allowedSides.map(a => a.sideType),
+          allowedSides: updated.allowedSides.map((a) => a.sideType),
         });
       } catch (error) {
         console.error("PUT /api/recettes/[id] error:", error);

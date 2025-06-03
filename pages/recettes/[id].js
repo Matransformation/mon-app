@@ -1,4 +1,3 @@
-// pages/recettes/[id].js
 import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
 import axios from "axios";
@@ -7,7 +6,7 @@ import { useSession } from "next-auth/react";
 import Navbar from "../../components/Navbar";
 import withAuthProtection from "../../lib/withAuthProtection";
 import Image from "next/image";
-
+import Head from "next/head";
 
 function RecetteDetail() {
   const router = useRouter();
@@ -17,9 +16,11 @@ function RecetteDetail() {
   const [recette, setRecette] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isFavori, setIsFavori] = useState(false);
+  const [html2pdfModule, setHtml2pdfModule] = useState(null);
 
   useEffect(() => {
     if (id) fetchRecette();
+    import("html2pdf.js").then((mod) => setHtml2pdfModule(mod.default));
   }, [id]);
 
   useEffect(() => {
@@ -66,8 +67,9 @@ function RecetteDetail() {
   const handlePrint = () => window.print();
 
   const handleDownloadPDF = () => {
+    if (!html2pdfModule || !recette) return;
     const element = document.getElementById("recette-pdf-content");
-    html2pdf().from(element).save(`${recette.name}.pdf`);
+    html2pdfModule().from(element).save(`${recette.name}.pdf`);
   };
 
   const handleShare = () => {
@@ -86,20 +88,59 @@ function RecetteDetail() {
   if (loading) return <div className="text-center mt-10">Chargement...</div>;
   if (!recette) return <div className="text-center mt-10">Recette introuvable.</div>;
 
+  const calories = Math.round(recette.ingredients.reduce((sum, ri) => sum + (ri.ingredient.calories * ri.quantity) / 100, 0));
+  const proteins = Math.round(recette.ingredients.reduce((sum, ri) => sum + (ri.ingredient.protein * ri.quantity) / 100, 0));
+  const fats = Math.round(recette.ingredients.reduce((sum, ri) => sum + (ri.ingredient.fat * ri.quantity) / 100, 0));
+  const carbs = Math.round(recette.ingredients.reduce((sum, ri) => sum + (ri.ingredient.carbs * ri.quantity) / 100, 0));
+
   return (
     <div className="min-h-screen bg-gray-50">
+      <Head>
+        <title>{recette.name} | MaTransformation</title>
+        <meta name="description" content={`Découvrez cette recette de ${recette.name}`} />
+        <meta property="og:title" content={`${recette.name} | MaTransformation`} />
+        <meta property="og:description" content={`Découvrez cette recette de ${recette.name}`} />
+        <meta property="og:image" content={recette.photoUrl || "/images/placeholder.png"} />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={`${recette.name} | MaTransformation`} />
+        <meta name="twitter:description" content={`Découvrez cette recette de ${recette.name}`} />
+        <meta name="twitter:image" content={recette.photoUrl || "/images/placeholder.png"} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Recipe",
+              name: recette.name,
+              image: recette.photoUrl || "/images/placeholder.png",
+              description: recette.description,
+              recipeIngredient: recette.ingredients.map((ri) => `${ri.quantity} ${ri.unit} ${ri.ingredient.name}`),
+              recipeInstructions: recette.steps.map((s) => s.step),
+              nutrition: {
+                "@type": "NutritionInformation",
+                calories: `${calories} kcal`,
+                proteinContent: `${proteins} g`,
+                fatContent: `${fats} g`,
+                carbohydrateContent: `${carbs} g`,
+              },
+            }),
+          }}
+        />
+      </Head>
+
       <Navbar />
 
       <div className="relative h-[60vh] w-full overflow-hidden">
-      <div className="relative w-full h-[60vh]">
-  <Image
-    src={recette.photoUrl || "/images/placeholder.png"}
-    alt={recette.name}
-    layout="fill"
-    objectFit="cover"
-    priority
-  />
-</div>
+        <div className="relative w-full h-[60vh]">
+          <Image
+            src={recette.photoUrl || "/images/placeholder.png"}
+            alt={recette.name}
+            layout="fill"
+            objectFit="cover"
+            priority
+          />
+        </div>
 
         <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <h1 className="text-4xl md:text-5xl font-bold text-white text-center">{recette.name}</h1>
@@ -167,12 +208,12 @@ function RecetteDetail() {
                 <p className="text-sm text-gray-500">{item}</p>
                 <p className="text-xl font-bold mt-1">
                   {item === "Calories"
-                    ? recette.ingredients.reduce((sum, ri) => sum + (ri.ingredient.calories * ri.quantity) / 100, 0).toFixed(0) + " kcal"
+                    ? calories + " kcal"
                     : item === "Protéines"
-                    ? recette.ingredients.reduce((sum, ri) => sum + (ri.ingredient.protein * ri.quantity) / 100, 0).toFixed(0) + " g"
+                    ? proteins + " g"
                     : item === "Lipides"
-                    ? recette.ingredients.reduce((sum, ri) => sum + (ri.ingredient.fat * ri.quantity) / 100, 0).toFixed(0) + " g"
-                    : recette.ingredients.reduce((sum, ri) => sum + (ri.ingredient.carbs * ri.quantity) / 100, 0).toFixed(0) + " g"}
+                    ? fats + " g"
+                    : carbs + " g"}
                 </p>
               </div>
             ))}

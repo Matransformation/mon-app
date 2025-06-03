@@ -94,70 +94,72 @@ function Dashboard({ utilisateur }) {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <>
       <Navbar />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <UserHeader utilisateur={utilisateur} />
-        </Card>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <UserHeader utilisateur={utilisateur} />
+          </Card>
 
-        <Card>
-          <WeightTracker
-            historiquePoids={poidsList}
-            onAdd={handleAddWeight}
-            onDelete={handleDeleteWeight}
-          />
-        </Card>
+          <Card>
+            <WeightTracker
+              historiquePoids={poidsList}
+              onAdd={handleAddWeight}
+              onDelete={handleDeleteWeight}
+            />
+          </Card>
 
-        <Card className="md:col-span-2">
-          <MetabolismForm
-            utilisateur={utilisateur}
-            poidsActuel={dernierPoids}
-            metabolismeInit={metabolismeCible}
-            onSave={handleSaveMetabo}
-          />
-        </Card>
+          <Card className="md:col-span-2">
+            <MetabolismForm
+              utilisateur={utilisateur}
+              poidsActuel={dernierPoids}
+              metabolismeInit={metabolismeCible}
+              onSave={handleSaveMetabo}
+            />
+          </Card>
 
-        <Card>
-          <h2 className="text-lg font-semibold mb-4">Évolution du poids</h2>
-          <WeightChart historiquePoids={poidsList} ChartComponent={Line} />
-        </Card>
+          <Card>
+            <h2 className="text-lg font-semibold mb-4">Évolution du poids</h2>
+            <WeightChart historiquePoids={poidsList} ChartComponent={Line} />
+          </Card>
 
-        <Card className="md:col-span-2">
-          <MeasurementsHistory mensurations={mensuList} onDelete={handleDeleteMensu} />
-        </Card>
+          <Card className="md:col-span-2">
+            <MeasurementsHistory mensurations={mensuList} onDelete={handleDeleteMensu} />
+          </Card>
 
-        <Card className="md:col-span-2">
-          <MeasurementsForm onSave={handleAddMensu} />
-        </Card>
-        {/* ✅ Bloc final incitatif après avoir ajouté poids ou mensurations */}
-<div className="mt-12 text-center bg-orange-50 border border-orange-200 p-6 rounded-xl shadow-sm">
-  <h3 className="text-xl font-semibold text-orange-600 mb-2">
-    Bravo ! 🎉
-  </h3>
-  <p className="text-gray-700 mb-4">
-    Vous avez ajouté vos informations (Mensurations optionnelles). Vous êtes maintenant prêt·e à découvrir nos :
-  </p>
+          <Card className="md:col-span-2">
+            <MeasurementsForm onSave={handleAddMensu} />
+          </Card>
 
-  <div className="flex flex-col sm:flex-row justify-center gap-4">
-    <a
-      href="/recettes"
-      className="bg-orange-500 text-white font-medium px-6 py-3 rounded-lg hover:bg-orange-600 transition"
-    >
-      Recettes
-    </a>
-    <a
-      href="/menu"
-      className="bg-gray-800 text-white font-medium px-6 py-3 rounded-lg hover:bg-gray-900 transition"
-    >
-      Menu personnalisé
-    </a>
-  </div>
-</div>
+          {/* ✅ Bloc final incitatif */}
+          <div className="md:col-span-2 mt-12 text-center bg-orange-50 border border-orange-200 p-6 rounded-xl shadow-sm">
+            <h3 className="text-xl font-semibold text-orange-600 mb-2">
+              Bravo ! 🎉
+            </h3>
+            <p className="text-gray-700 mb-4">
+              Vous avez ajouté vos informations (Mensurations optionnelles). Vous êtes maintenant prêt·e à découvrir nos :
+            </p>
 
+            <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <a
+                href="/recettes"
+                className="bg-orange-500 text-white font-medium px-6 py-3 rounded-lg hover:bg-orange-600 transition"
+              >
+                Recettes
+              </a>
+              <a
+                href="/menu"
+                className="bg-gray-800 text-white font-medium px-6 py-3 rounded-lg hover:bg-gray-900 transition"
+              >
+                Menu personnalisé
+              </a>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

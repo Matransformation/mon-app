@@ -23,6 +23,11 @@ export default function Header() {
             </Link>
           </li>
           <li>
+            <Link href="/recettes" className="hover:text-orange-500">
+              Recettes
+            </Link>
+          </li>
+          <li>
             <Link href="/tarifs" className="hover:text-orange-500">
               Tarifs
             </Link>
@@ -77,6 +82,9 @@ export default function Header() {
         <div className="md:hidden px-4 pb-4 space-y-2">
           <Link href="/" className="block text-gray-700 hover:text-orange-500">
             Accueil
+          </Link>
+          <Link href="/recettes" className="block text-gray-700 hover:text-orange-500">
+            Recettes
           </Link>
           <Link href="/tarifs" className="block text-gray-700 hover:text-orange-500">
             Tarifs

@@ -75,6 +75,7 @@ function ListeRecettes() {
         recette.categories.some((cat) => cat.categoryId === selectedCategory)
       );
     }
+
     if (searchQuery.trim() !== "") {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter((recette) => {
@@ -85,6 +86,7 @@ function ListeRecettes() {
         return matchRecette || matchIngredient;
       });
     }
+
     if (sortOption) {
       filtered.sort((a, b) => {
         const aNutri = calculerNutritionEtPrix(a.ingredients);
@@ -98,6 +100,7 @@ function ListeRecettes() {
         }
       });
     }
+
     return filtered;
   };
 
@@ -107,7 +110,17 @@ function ListeRecettes() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 py-6">
         <h1 className="text-3xl font-bold mb-6 text-center">🍴 Toutes nos Recettes</h1>
 
-        {!isSubscribed && !isOnTrial && (
+        {!session ? (
+          <div className="text-center mb-8">
+            <p className="text-gray-700 font-medium mb-2">Accédez à toutes les recettes personnalisées 🔒</p>
+            <button
+              onClick={() => router.push("/register")}
+              className="bg-green-600 text-white px-6 py-2 rounded-full hover:bg-green-700 transition"
+            >
+              Profitez de 7 jours gratuits
+            </button>
+          </div>
+        ) : (!isSubscribed && !isOnTrial) && (
           <div className="text-center mb-8">
             <p className="text-gray-700 font-medium mb-2">Accédez à toutes les recettes personnalisées 🔒</p>
             <button
@@ -196,8 +209,11 @@ function ListeRecettes() {
                     className="rounded-t"
                   />
                   {!isAccessible && (
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white text-sm font-semibold">
-                      🔒 Réservé aux abonnés
+                    <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-white text-sm font-semibold px-2 text-center">
+                      🔒 Réservé aux abonnés<br />
+                      {!session
+                        ? "Créez un compte pour profiter de 7 jours gratuits"
+                        : "Abonnez-vous pour y accéder"}
                     </div>
                   )}
                 </div>
@@ -229,6 +245,7 @@ function ListeRecettes() {
           })}
         </div>
       </div>
+      
     </>
   );
 }
