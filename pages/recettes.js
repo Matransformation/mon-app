@@ -117,7 +117,7 @@ function ListeRecettes() {
               onClick={() => router.push("/register")}
               className="bg-green-600 text-white px-6 py-2 rounded-full hover:bg-green-700 transition"
             >
-              Profitez de 7 jours gratuits
+              Profitez de 7 jours gratuits sans rentrer votre carte bancaire
             </button>
           </div>
         ) : (!isSubscribed && !isOnTrial) && (
