@@ -87,14 +87,16 @@ function ListeRecettes() {
       });
     }
   
-    // 1. On trie les recettes publiques d'abord
-    filtered.sort((a, b) => {
-      if (a.isPublic && !b.isPublic) return -1;
-      if (!a.isPublic && b.isPublic) return 1;
-      return 0;
-    });
+    // 👉 Si la personne n'est PAS connectée, on met les recettes publiques en haut
+    if (!session) {
+      filtered.sort((a, b) => {
+        if (a.isPublic && !b.isPublic) return -1;
+        if (!a.isPublic && b.isPublic) return 1;
+        return 0;
+      });
+    }
   
-    // 2. Puis on applique le tri nutritionnel ou prix si demandé
+    // Puis on applique le tri si nécessaire
     if (sortOption) {
       filtered.sort((a, b) => {
         const aNutri = calculerNutritionEtPrix(a.ingredients);
