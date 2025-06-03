@@ -65,17 +65,17 @@ function ListeRecettes() {
 
   const getFilteredAndSortedRecettes = () => {
     let filtered = [...recettes];
-
+  
     if (showOnlyPublic) {
       filtered = filtered.filter((recette) => recette.isPublic);
     }
-
+  
     if (selectedCategory) {
       filtered = filtered.filter((recette) =>
         recette.categories.some((cat) => cat.categoryId === selectedCategory)
       );
     }
-
+  
     if (searchQuery.trim() !== "") {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter((recette) => {
@@ -86,7 +86,15 @@ function ListeRecettes() {
         return matchRecette || matchIngredient;
       });
     }
-
+  
+    // 1. On trie les recettes publiques d'abord
+    filtered.sort((a, b) => {
+      if (a.isPublic && !b.isPublic) return -1;
+      if (!a.isPublic && b.isPublic) return 1;
+      return 0;
+    });
+  
+    // 2. Puis on applique le tri nutritionnel ou prix si demandé
     if (sortOption) {
       filtered.sort((a, b) => {
         const aNutri = calculerNutritionEtPrix(a.ingredients);
@@ -100,9 +108,10 @@ function ListeRecettes() {
         }
       });
     }
-
+  
     return filtered;
   };
+  
 
   return (
     <>
