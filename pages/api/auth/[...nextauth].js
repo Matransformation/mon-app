@@ -89,8 +89,12 @@ export const authOptions = {
         session.user.subscriptionEnd = token.subscriptionEnd;
         session.user.trialEndsAt = token.trialEndsAt;
         session.user.role = token.role; // ✅ AJOUTÉ ICI
-        session.user.stripeCurrentPeriodEnd = token.stripeCurrentPeriodEnd;
-      }
+        session.user.trialEndsAt = token.trialEndsAt;
+
+        const now = new Date();
+        const trialEndDate = token.trialEndsAt ? new Date(token.trialEndsAt) : null;
+        session.user.isOnTrial = trialEndDate && trialEndDate > now;
+              }
 
       return session;
     },

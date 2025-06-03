@@ -17,6 +17,8 @@ function AjouterRecette() {
   const [categories, setCategories] = useState([]);  // Ajout pour gérer les catégories
   const [selectedCategories, setSelectedCategories] = useState([]); // Valeur sélectionnée pour les catégories
   const router = useRouter();
+  const [isPublic, setIsPublic] = useState(false);
+
 
   useEffect(() => {
     // Charger les ingrédients
@@ -97,6 +99,7 @@ function AjouterRecette() {
     formData.append("ingredients", JSON.stringify(ingredientsWithDefaultUnit)); // Envoi des ingrédients avec unité par défaut
     formData.append("steps", JSON.stringify(steps));
     formData.append("categories", JSON.stringify(selectedCategories)); // Envoi des catégories sélectionnées
+    formData.append("isPublic", isPublic);
     if (photo) formData.append("photo", photo);
 
     try {
@@ -194,6 +197,18 @@ function AjouterRecette() {
             ))}
           </select>
         </div>
+        <div>
+  <label className="font-medium">Rendre cette recette publique ?</label>
+  <div className="mt-2">
+    <input
+      type="checkbox"
+      checked={isPublic}
+      onChange={(e) => setIsPublic(e.target.checked)}
+      className="mr-2"
+    />
+    <span>{isPublic ? "Oui" : "Non"}</span>
+  </div>
+</div>
 
         <button type="submit" className="w-full bg-green-600 text-white p-3 rounded">Ajouter la recette</button>
       </form>

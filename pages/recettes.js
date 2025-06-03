@@ -1,12 +1,10 @@
-// pages/recettes.js
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import axios from "axios";
 import { Search } from "lucide-react";
 import Navbar from "../components/Navbar";
-import withAuthProtection from "../lib/withAuthProtection";
 import Image from "next/image";
-
+import { useSession } from "next-auth/react";
 
 function ListeRecettes() {
   const [recettes, setRecettes] = useState([]);
@@ -14,7 +12,12 @@ function ListeRecettes() {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [sortOption, setSortOption] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showOnlyPublic, setShowOnlyPublic] = useState(false);
   const router = useRouter();
+  const { data: session } = useSession();
+
+  const isSubscribed = session?.user?.isSubscribed;
+  const isOnTrial = session?.user?.isOnTrial;
 
   useEffect(() => {
     fetchRecettes();
@@ -41,7 +44,6 @@ function ListeRecettes() {
 
   const calculerNutritionEtPrix = (ingredients) => {
     let totalCalories = 0, totalProtein = 0, totalFat = 0, totalCarbs = 0, totalPrice = 0;
-
     ingredients.forEach((ri) => {
       if (ri.ingredient) {
         const ratio = ri.quantity / 100;
@@ -52,25 +54,27 @@ function ListeRecettes() {
         totalPrice += (ri.ingredient.price * ri.quantity) / 1000;
       }
     });
-
     return {
       calories: Math.round(totalCalories),
       protein: Math.round(totalProtein),
       fat: Math.round(totalFat),
       carbs: Math.round(totalCarbs),
-      price: totalPrice.toFixed(2),
+      price: parseFloat(totalPrice.toFixed(2)),
     };
   };
 
   const getFilteredAndSortedRecettes = () => {
     let filtered = [...recettes];
 
+    if (showOnlyPublic) {
+      filtered = filtered.filter((recette) => recette.isPublic);
+    }
+
     if (selectedCategory) {
       filtered = filtered.filter((recette) =>
         recette.categories.some((cat) => cat.categoryId === selectedCategory)
       );
     }
-
     if (searchQuery.trim() !== "") {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter((recette) => {
@@ -81,12 +85,10 @@ function ListeRecettes() {
         return matchRecette || matchIngredient;
       });
     }
-
     if (sortOption) {
       filtered.sort((a, b) => {
         const aNutri = calculerNutritionEtPrix(a.ingredients);
         const bNutri = calculerNutritionEtPrix(b.ingredients);
-
         switch (sortOption) {
           case "calories-asc": return aNutri.calories - bNutri.calories;
           case "calories-desc": return bNutri.calories - aNutri.calories;
@@ -96,7 +98,6 @@ function ListeRecettes() {
         }
       });
     }
-
     return filtered;
   };
 
@@ -106,7 +107,18 @@ function ListeRecettes() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 py-6">
         <h1 className="text-3xl font-bold mb-6 text-center">🍴 Toutes nos Recettes</h1>
 
-        {/* Barre recherche */}
+        {!isSubscribed && !isOnTrial && (
+          <div className="text-center mb-8">
+            <p className="text-gray-700 font-medium mb-2">Accédez à toutes les recettes personnalisées 🔒</p>
+            <button
+              onClick={() => router.push("/abonnement")}
+              className="bg-green-600 text-white px-6 py-2 rounded-full hover:bg-green-700 transition"
+            >
+              Je m’abonne
+            </button>
+          </div>
+        )}
+
         <div className="flex items-center max-w-lg mx-auto mb-6">
           <div className="relative w-full">
             <input
@@ -122,7 +134,6 @@ function ListeRecettes() {
           </div>
         </div>
 
-        {/* Catégories */}
         <div className="flex flex-wrap gap-2 mb-6 justify-center">
           <button
             onClick={() => setSelectedCategory(null)}
@@ -145,61 +156,63 @@ function ListeRecettes() {
           ))}
         </div>
 
-        {/* Filtres tri */}
-<div className="px-4 sm:px-6">
-  <div className="flex flex-wrap gap-4 justify-center mb-6 max-w-lg mx-auto">
-    <button onClick={() => setSortOption("calories-asc")} className="bg-blue-100 text-blue-800 px-3 py-1 rounded hover:bg-blue-200">
-      🔥 Calories croissant
-    </button>
-    <button onClick={() => setSortOption("calories-desc")} className="bg-blue-100 text-blue-800 px-3 py-1 rounded hover:bg-blue-200">
-      🔥 Calories décroissant
-    </button>
-    <button onClick={() => setSortOption("price-asc")} className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded hover:bg-yellow-200">
-      💶 Prix croissant
-    </button>
-    <button onClick={() => setSortOption("price-desc")} className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded hover:bg-yellow-200">
-      💶 Prix décroissant
-    </button>
-  </div>
-</div>
+        <div className="flex flex-wrap gap-4 justify-center mb-6 max-w-2xl mx-auto">
+          <button onClick={() => setSortOption("calories-asc")} className="bg-blue-100 text-blue-800 px-3 py-1 rounded hover:bg-blue-200">
+            🔥 Calories croissant
+          </button>
+          <button onClick={() => setSortOption("calories-desc")} className="bg-blue-100 text-blue-800 px-3 py-1 rounded hover:bg-blue-200">
+            🔥 Calories décroissant
+          </button>
+          <button onClick={() => setSortOption("price-asc")} className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded hover:bg-yellow-200">
+            💶 Prix croissant
+          </button>
+          <button onClick={() => setSortOption("price-desc")} className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded hover:bg-yellow-200">
+            💶 Prix décroissant
+          </button>
+          <button onClick={() => setShowOnlyPublic(!showOnlyPublic)} className="bg-gray-100 text-gray-800 px-3 py-1 rounded hover:bg-gray-200">
+            {showOnlyPublic ? "👁️ Toutes les recettes" : "🔓 Uniquement les recettes publiques"}
+          </button>
+        </div>
 
-
-
-        {/* Recettes */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {getFilteredAndSortedRecettes().map((recette) => {
-            const imageUrl = recette.photoUrl;
-
             const nutrition = calculerNutritionEtPrix(recette.ingredients || []);
+            const isAccessible = recette.isPublic || isSubscribed || isOnTrial;
 
             return (
               <div
                 key={recette.id}
                 className="border rounded-lg shadow hover:shadow-lg transition overflow-hidden bg-white cursor-pointer"
-                onClick={() => router.push(`/recettes/${recette.id}`)}
+                onClick={() => {
+                  if (isAccessible) router.push(`/recettes/${recette.id}`);
+                }}
               >
-                {recette.photoUrl && (
-  <div className="relative w-full h-48">
-    <Image
-      src={recette.photoUrl}
-      alt={recette.name}
-      layout="fill"
-      objectFit="cover"
-      className="rounded-t"
-    />
-  </div>
-)}
-
+                <div className="relative w-full h-48">
+                  <Image
+                    src={isAccessible ? recette.photoUrl : "/verrou.jpg"}
+                    alt={recette.name}
+                    layout="fill"
+                    objectFit="cover"
+                    className="rounded-t"
+                  />
+                  {!isAccessible && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white text-sm font-semibold">
+                      🔒 Réservé aux abonnés
+                    </div>
+                  )}
+                </div>
 
                 <div className="p-4 space-y-2">
                   <h2 className="text-xl font-semibold">{recette.name}</h2>
-                  <p className="text-gray-600 text-sm">{recette.description}</p>
-                  <div className="text-sm text-gray-700 mt-2 space-y-1">
-                    <p>🔥 {nutrition.calories} kcal</p>
-                    <p>🍗 {nutrition.protein}g protéines</p>
-                    <p>🧈 {nutrition.fat}g lipides</p>
-                    <p>🍞 {nutrition.carbs}g glucides</p>
-                    <p>💶 {nutrition.price} €</p>
+                  <p className="text-gray-600 text-sm">
+                    {isAccessible ? recette.description : "Contenu réservé aux abonnés."}
+                  </p>
+                  <div className={`text-sm mt-2 space-y-1 ${isAccessible ? "text-gray-700" : "text-gray-400"}`}>
+                    <p>🔥 {isAccessible ? `${nutrition.calories} kcal` : "– kcal"}</p>
+                    <p>🍗 {isAccessible ? `${nutrition.protein}g protéines` : "– g protéines"}</p>
+                    <p>🧈 {isAccessible ? `${nutrition.fat}g lipides` : "– g lipides"}</p>
+                    <p>🍞 {isAccessible ? `${nutrition.carbs}g glucides` : "– g glucides"}</p>
+                    <p>💶 {isAccessible ? `${nutrition.price} €` : "– €"}</p>
                   </div>
                   {recette.categories && recette.categories.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2">
@@ -220,4 +233,4 @@ function ListeRecettes() {
   );
 }
 
-export default withAuthProtection(ListeRecettes);
+export default ListeRecettes;

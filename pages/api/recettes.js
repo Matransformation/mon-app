@@ -33,6 +33,8 @@ export default async function handler(req, res) {
         const stepsRaw        = fields.steps?.[0] || "[]";
         const categoriesRaw   = fields.categories?.[0] || "[]";
         const allowedSidesRaw = fields.allowedSides?.[0] || "[]";
+        const isPublic = fields.isPublic?.[0] === "true";
+
 
         const ingredients   = JSON.parse(ingredientsRaw);
         const steps         = JSON.parse(stepsRaw);
@@ -87,6 +89,7 @@ export default async function handler(req, res) {
             protein: Math.round(totalProtein),
             fat: Math.round(totalFat),
             carbs: Math.round(totalCarbs),
+            isPublic, // 👈 ici
             ingredients: {
               create: ingredientsWithDefaultUnit.map((ing) => ({
                 quantity: parseFloat(ing.quantity),
@@ -116,14 +119,18 @@ export default async function handler(req, res) {
     });
 
   } else if (method === "GET") {
+    const isPublicOnly = req.query.public === "true"; // 👈 ICI
+
     try {
       const recettes = await prisma.recette.findMany({
+        where: isPublicOnly ? { isPublic: true } : {},
         include: {
           ingredients: { include: { ingredient: true } },
           categories:  { include: { category: true } },
           allowedSides: true,
         },
       });
+      
 
       const data = recettes.map(({ allowedSides, ...r }) => ({
         ...r,

@@ -155,6 +155,7 @@ model VerificationToken {
 model Recette {
   id               String               @id @default(cuid()) @db.VarChar(191)
   name             String               @db.VarChar(191)
+  
   description      String?              @db.VarChar(191)
   price            Float?
   timeCook         Int?
@@ -175,6 +176,8 @@ model Recette {
   categories       RecetteCategory[]
   ingredients      RecetteIngredient[]
   repasJournaliers RepasJournalier[]
+  isPublic         Boolean              @default(false) // 👈 accessible à tous si true
+
 }
 
 model Ingredient {

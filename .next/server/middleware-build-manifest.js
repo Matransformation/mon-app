@@ -20,15 +20,20 @@ globalThis.__BUILD_MANIFEST = {
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/social": [
+    "/auth/signin": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/social.js"
+      "static/chunks/pages/auth/signin.js"
     ],
-    "/videos": [
+    "/recettes": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/videos.js"
+      "static/chunks/pages/recettes.js"
+    ],
+    "/recettes/[id]": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/recettes/[id].js"
     ]
   },
   "ampFirstPages": []
