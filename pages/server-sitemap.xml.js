@@ -1,7 +1,7 @@
 // pages/server-sitemap.xml.js
 
 import { getServerSideSitemap } from 'next-sitemap';
-import { prisma } from '../../lib/prisma';
+import prisma from "../lib/prisma";
 
 export async function getServerSideProps(ctx) {
   const recettes = await prisma.recette.findMany({
