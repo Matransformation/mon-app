@@ -5,11 +5,19 @@ export default async function handler(req, res) {
   
     const { email, firstName, lastName } = req.body;
   
-    try {
-      const klaviyoApiKey = process.env.KLAVIYO_PRIVATE_API_KEY;
-      const klaviyoListId = "SSM6Ju"; // ✅ Ton ID de liste Klaviyo
+    const klaviyoApiKey = process.env.KLAVIYO_PRIVATE_API_KEY;
+    const klaviyoListId = "SSM6Ju"; // Ton ID de liste Klaviyo
   
-      // 1. Créer le profil (ou le mettre à jour)
+    // 🔍 Debug
+    console.log("📩 Données reçues :", { email, firstName, lastName });
+    console.log("🔑 Clé API Klaviyo présente :", klaviyoApiKey ? "OUI" : "NON");
+  
+    if (!klaviyoApiKey) {
+      return res.status(500).json({ message: "Clé API manquante dans .env.local" });
+    }
+  
+    try {
+      // Étape 1 : Créer/MàJ le profil
       const profileRes = await fetch("https://a.klaviyo.com/api/profiles/", {
         method: "POST",
         headers: {
@@ -31,11 +39,11 @@ export default async function handler(req, res) {
   
       if (!profileRes.ok) {
         const errorText = await profileRes.text();
-        console.error("❌ Erreur création profil :", errorText);
+        console.error("❌ Erreur création profil Klaviyo :", errorText);
         return res.status(500).json({ message: "Erreur création profil Klaviyo" });
       }
   
-      // 2. Ajouter ce profil à la liste
+      // Étape 2 : Ajouter à la liste
       const listRes = await fetch(`https://a.klaviyo.com/api/lists/${klaviyoListId}/relationships/profiles/`, {
         method: "POST",
         headers: {
@@ -57,14 +65,14 @@ export default async function handler(req, res) {
   
       if (!listRes.ok) {
         const errorText = await listRes.text();
-        console.error("❌ Erreur ajout à la liste :", errorText);
+        console.error("❌ Erreur ajout à la liste Klaviyo :", errorText);
         return res.status(500).json({ message: "Erreur ajout à la liste Klaviyo" });
       }
   
       console.log("✅ Profil ajouté à Klaviyo et à la liste !");
       return res.status(200).json({ message: "Ajouté à Klaviyo avec succès" });
     } catch (error) {
-      console.error("🔥 Erreur interne :", error);
+      console.error("🔥 Erreur interne serveur Klaviyo :", error);
       return res.status(500).json({ message: "Erreur serveur Klaviyo" });
     }
   }
