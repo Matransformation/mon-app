@@ -12,6 +12,8 @@ export default function MetabolismForm({
     age: utilisateur.age?.toString() || "",
     taille: utilisateur.taille?.toString() || "",
     activite: utilisateur.activite || "",
+    objectif: utilisateur.objectif || "perte", // 👈 initialise depuis la BDD
+
   })
   const [metabolisme, setMetabolisme] = useState(metabolismeInit ?? "")
   const [saving, setSaving] = useState(false)
@@ -43,6 +45,8 @@ export default function MetabolismForm({
         age: parseInt(form.age, 10),
         taille: parseInt(form.taille, 10),
         activite: form.activite,
+        objectif: form.objectif,
+
       })
       setMetabolisme(newMeta.toString())
     } catch (err) {
@@ -99,6 +103,14 @@ export default function MetabolismForm({
           <option value="très actif">5–6h/sem</option>
           <option value="extrêmement actif">7h+</option>
         </select>
+        <select
+  value={form.objectif}
+  onChange={(e) => setForm({ ...form, objectif: e.target.value })}
+  className="border p-2 rounded"
+>
+  <option value="perte">Perte de poids</option>
+  <option value="maintien">Maintien de poids</option>
+</select>
 
         <button
           type="submit"

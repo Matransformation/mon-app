@@ -15,6 +15,7 @@ model User {
   email                   String                   @unique(map: "utilisateur_email_key") @db.VarChar(191)
   poids                   Float?
   metabolismeCible        Int?
+  objectif                String? // "perte" ou "maintien"
   createdAt               DateTime                 @default(dbgenerated("CURRENT_TIMESTAMP(3)"))
   activite                String?                  @db.VarChar(191)
   age                     Int?

@@ -184,6 +184,7 @@ export async function getServerSideProps(context) {
     metabolismeCible: raw.metabolismeCible,
     sexe: raw.sexe,
     activite: raw.activite,
+    objectif: raw.objectif || "perte", // 👈 AJOUTE CETTE LIGNE
     historiquePoids: raw.historiquePoids.map((h) => ({
       id: h.id,
       poids: h.poids,

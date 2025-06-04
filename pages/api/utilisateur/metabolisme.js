@@ -5,7 +5,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: "Méthode non autorisée" });
   }
 
-  const { utilisateurId, sexe, age, taille, activite } = req.body;
+  const { utilisateurId, sexe, age, taille, activite, objectif} = req.body;
 
   if (!utilisateurId || !sexe || !age || !taille || !activite) {
     return res.status(400).json({ message: "Champs manquants pour le calcul" });
@@ -43,7 +43,9 @@ export default async function handler(req, res) {
     const metabolismeSansDeficit = metabolismeBase * coeff;
 
     // Application d’un déficit de 20 %
-    const metabolismeCible = Math.round(metabolismeSansDeficit * 0.8);
+    const deficit = objectif === "maintien" ? 1 : 0.8;
+const metabolismeCible = Math.round(metabolismeSansDeficit * deficit);
+
 
     await prisma.user.update({
       where: { id: utilisateurId },
@@ -52,6 +54,7 @@ export default async function handler(req, res) {
         age: parseInt(age),
         taille: parseInt(taille),
         activite,
+        objectif, 
         metabolismeCible,
       },
     });

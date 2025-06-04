@@ -3,14 +3,14 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/dashboard": "pages/dashboard.js",
-  "/login": "pages/login.js",
-  "/recettes/[id]": "pages/recettes/[id].js",
   "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
   "/api/utilisateur/metabolisme": "pages/api/utilisateur/metabolisme.js",
   "/menu": "pages/menu.js",
   "/api/ingredients": "pages/api/ingredients.js",
   "/api/menu/[userId]": "pages/api/menu/[userId].js",
   "/api/utilisateur/[id]": "pages/api/utilisateur/[id].js",
+  "/api/utilisateur/poids": "pages/api/utilisateur/poids.js",
+  "/recettes/[id]": "pages/recettes/[id].js",
   "/api/recettes/[id]": "pages/api/recettes/[id].js",
   "/api/utilisateur/[id]/favoris": "pages/api/utilisateur/[id]/favoris.js"
 }
