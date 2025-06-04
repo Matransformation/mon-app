@@ -45,8 +45,24 @@ export default function Register() {
       if (!res.ok) {
         setError(data.message || "Erreur lors de l’inscription");
       } else {
+        // >>> AJOUT À KLAVIYO
+        try {
+          await fetch("/api/klaviyo/subscribe", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: form.email,
+              firstName: form.firstName,
+              lastName: form.lastName,
+            }),
+          });
+        } catch (err) {
+          console.error("Erreur d'ajout à Klaviyo (non bloquant)", err);
+        }
+      
         router.push("/verify-email");
       }
+      
     } catch {
       setError("Impossible de se connecter au serveur.");
     } finally {
