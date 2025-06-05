@@ -1,3 +1,5 @@
+// pages/register.js
+
 import { useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
@@ -22,6 +24,7 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
     if (form.password !== form.confirm) {
       setError("Les mots de passe ne correspondent pas");
       return;
@@ -29,6 +32,7 @@ export default function Register() {
     setLoading(true);
 
     try {
+      // 1) Création de l'utilisateur dans votre base via /api/auth/signup
       const payload = {
         name: `${form.firstName} ${form.lastName}`,
         email: form.email,
@@ -45,7 +49,8 @@ export default function Register() {
       if (!res.ok) {
         setError(data.message || "Erreur lors de l’inscription");
       } else {
-        // >>> AJOUT À KLAVIYO
+        // 2) Création du profil Klaviyo (sans tenter d'ajouter à une liste,
+        //    car le flow Klaviyo s'en charge ensuite)
         try {
           await fetch("/api/klaviyo/subscribe", {
             method: "POST",
@@ -57,12 +62,12 @@ export default function Register() {
             }),
           });
         } catch (err) {
-          console.error("Erreur d'ajout à Klaviyo (non bloquant)", err);
+          console.error("Erreur d'envoi à Klaviyo (non bloquant)", err);
         }
-      
+
+        // 3) Rediriger vers la page de vérification email
         router.push("/verify-email");
       }
-      
     } catch {
       setError("Impossible de se connecter au serveur.");
     } finally {

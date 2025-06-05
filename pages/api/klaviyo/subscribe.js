@@ -7,10 +7,8 @@ export default async function handler(req, res) {
   
     const { email, firstName, lastName } = req.body;
     const klaviyoApiKey = process.env.KLAVIYO_PRIVATE_API_KEY;
-    const klaviyoListId = "SSM6Ju"; // ← Ton ID de liste
   
-    // Debug rapide pour vérifier que la clé est bien lue
-    console.log("📩 Données reçues :", { email, firstName, lastName });
+    console.log("📩 Données reçues pour Klaviyo :", { email, firstName, lastName });
     console.log("🔑 Clé API Klaviyo présente :", klaviyoApiKey ? "OUI" : "NON");
   
     if (!klaviyoApiKey) {
@@ -18,13 +16,13 @@ export default async function handler(req, res) {
     }
   
     try {
-      // 1) Créer ou mettre à jour le profil dans Klaviyo
+      // 1) Créer ou mettre à jour le profil dans Klaviyo (sans liste)
       const profileRes = await fetch("https://a.klaviyo.com/api/profiles/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Klaviyo-API-Key": klaviyoApiKey,    // <--- Utilisation du header Klaviyo-API-Key
-          revision: "2023-02-22",               // <--- Version de l’API
+          "Authorization": `Klaviyo-API-Key ${klaviyoApiKey}`,
+          revision: "2023-02-22",
         },
         body: JSON.stringify({
           data: {
@@ -38,43 +36,18 @@ export default async function handler(req, res) {
         }),
       });
   
+      // Si Klaviyo renvoie une erreur, on lit le texte brut pour le renvoyer au client
       if (!profileRes.ok) {
         const errorText = await profileRes.text();
-        console.error("❌ Erreur création profil Klaviyo :", errorText);
-        return res.status(500).json({ message: "Erreur lors de la création du profil Klaviyo." });
+        console.error("❌ Klaviyo error (raw response):", errorText);
+        // Renvoyer le status et le texte exact pour diagnostiquer
+        return res
+          .status(profileRes.status)
+          .json({ message: "Erreur lors de la création du profil Klaviyo.", detail: errorText });
       }
   
-      // 2) Ajouter ce profil à la liste SSM6Ju
-      const listRes = await fetch(
-        `https://a.klaviyo.com/api/lists/${klaviyoListId}/relationships/profiles/`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Klaviyo-API-Key": klaviyoApiKey,  // <--- Même header ici
-            revision: "2023-02-22",
-          },
-          body: JSON.stringify({
-            data: [
-              {
-                type: "profile",
-                attributes: {
-                  email: email,
-                },
-              },
-            ],
-          }),
-        }
-      );
-  
-      if (!listRes.ok) {
-        const errorText = await listRes.text();
-        console.error("❌ Erreur ajout à la liste Klaviyo :", errorText);
-        return res.status(500).json({ message: "Erreur lors de l’ajout à la liste Klaviyo." });
-      }
-  
-      console.log("✅ Profil ajouté à Klaviyo et à la liste !");
-      return res.status(200).json({ message: "Inscription dans Klaviyo réussie." });
+      console.log("✅ Profil Klaviyo créé ou mis à jour :", email);
+      return res.status(200).json({ message: "Profil Klaviyo créé/mis à jour." });
     } catch (error) {
       console.error("🔥 Erreur interne Klaviyo :", error);
       return res.status(500).json({ message: "Erreur serveur Klaviyo." });

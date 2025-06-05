@@ -2,9 +2,5 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/verify-email": "pages/verify-email.js",
-  "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
-  "/register": "pages/register.js",
-  "/api/klaviyo/subscribe": "pages/api/klaviyo/subscribe.js",
-  "/api/auth/signup": "pages/api/auth/signup.js"
+  "/api/klaviyo/subscribe": "pages/api/klaviyo/subscribe.js"
 }
