@@ -47,6 +47,7 @@ export default async function handler(req, res) {
       payment_method_types: ["card"],
       line_items: [{ price, quantity: 1 }],
       mode: "subscription",
+      allow_promotion_codes: true, // ✅ affiche le champ "code promo" sur Stripe
       success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url:  `${origin}/cancel`,
       metadata: { userId: user.id },  // pour le webhook
