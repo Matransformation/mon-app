@@ -38,68 +38,6 @@ export default async function handler(req, res) {
       }
     })
 
-    // ◼️ APPEL À KLAVIYO POUR CRÉER / METTRE À JOUR LE PROFIL + L’AJOUTER À LA LISTE ◼️
-    // (On ignore volontairement les erreurs Klaviyo pour ne pas bloquer la création d’utilisateur)
-    (async () => {
-      try {
-        const klaviyoApiKey = process.env.KLAVIYO_PRIVATE_API_KEY
-        const klaviyoListId = 'SSM6Ju' // Remplacez par votre List ID
-
-        if (klaviyoApiKey) {
-          // 1. Créer ou mettre à jour le profil
-          const profileRes = await fetch('https://a.klaviyo.com/api/profiles/', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Klaviyo-API-Key': klaviyoApiKey,
-              revision: '2023-02-22',
-            },
-            body: JSON.stringify({
-              data: {
-                type: 'profile',
-                attributes: {
-                  email: user.email,
-                  first_name: user.name.split(' ').slice(0, -1).join(' ') || '', // ou formater comme vous préférez
-                  last_name: user.name.split(' ').slice(-1)[0] || '',
-                },
-              },
-            }),
-          })
-
-          if (profileRes.ok) {
-            // 2. Ajouter ce profil à la liste
-            await fetch(
-              `https://a.klaviyo.com/api/lists/${klaviyoListId}/relationships/profiles/`,
-              {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Klaviyo-API-Key': klaviyoApiKey,
-                  revision: '2023-02-22',
-                },
-                body: JSON.stringify({
-                  data: [
-                    {
-                      type: 'profile',
-                      attributes: { email: user.email },
-                    },
-                  ],
-                }),
-              }
-            )
-            console.log(`✅ Utilisateur ${user.email} ajouté à Klaviyo.`)
-          } else {
-            const errText = await profileRes.text()
-            console.error('❌ Klaviyo – Échec création profil :', errText)
-          }
-        } else {
-          console.warn('⚠️ KLAVIYO_PRIVATE_API_KEY manquante, on n’envoie pas vers Klaviyo.')
-        }
-      } catch (klaviyoErr) {
-        console.error('🔥 Erreur non bloquante Klaviyo:', klaviyoErr)
-      }
-    })()
-
     // 3) Générer un code de vérification (6 caractères hexadécimaux)
     const token = randomBytes(3).toString('hex').toUpperCase()
     const expiresAt = addHours(new Date(), 1)
