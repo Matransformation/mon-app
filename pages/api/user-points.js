@@ -1,23 +1,21 @@
 // pages/api/user-points.js
 import { getServerSession } from 'next-auth/next'
-import { authOptions } from './auth/[...nextauth]'
-import prisma from '../../lib/prisma'
+import { authOptions }    from './auth/[...nextauth]'
+import prisma              from '../../lib/prisma'
 
+// Points attribués pour chaque action
 const ACTION_POINTS = {
-  follow_matransformation_instagram:   5,
-  follow_matransformation_facebook:     5,
-  follow_clemalauxdiet_instagram:      5,
-  follow_clemalauxdiet_facebook:       5,
+  follow_instagram:                   5,
+  follow_facebook:                    5,
+  follow_clemalauxdiet_instagram:     5,
+  follow_clemalauxdiet_facebook:      5,
 }
 
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions)
-  if (!session) {
-    return res.status(401).json({ error: 'Unauthorized' })
-  }
+  if (!session) return res.status(401).json({ error: 'Unauthorized' })
   const userId = session.user.id
 
-  // --- GET : solde + actions déjà faites
   if (req.method === 'GET') {
     let record = await prisma.userPoint.findUnique({ where: { userId } })
     if (!record) {
@@ -25,18 +23,20 @@ export default async function handler(req, res) {
         data: { userId, points: 0, actionsDone: [] }
       })
     }
+    const actionsDone = Array.isArray(record.actionsDone)
+      ? record.actionsDone
+      : []
     return res.status(200).json({
       points: record.points,
-      actionsDone: Array.isArray(record.actionsDone) ? record.actionsDone : []
+      actionsDone
     })
   }
 
-  // --- POST : tenter d’ajouter l’action
   if (req.method === 'POST') {
     const { actionKey } = req.body
     const pts = ACTION_POINTS[actionKey]
     if (!actionKey || pts === undefined) {
-      return res.status(400).json({ error: 'Action invalide' })
+      return res.status(400).json({ error: 'Invalid action' })
     }
 
     let record = await prisma.userPoint.findUnique({ where: { userId } })
@@ -45,31 +45,31 @@ export default async function handler(req, res) {
         data: { userId, points: 0, actionsDone: [] }
       })
     }
+    const actionsDone = Array.isArray(record.actionsDone)
+      ? record.actionsDone
+      : []
 
-    const done = Array.isArray(record.actionsDone) ? record.actionsDone : []
-
-    // Si déjà fait, on ne recomptabilise pas
-    if (done.includes(actionKey)) {
+    if (actionsDone.includes(actionKey)) {
       return res.status(200).json({
         points: record.points,
-        actionsDone: done,
-        newlyAdded: false
+        actionsDone
       })
     }
 
-    // Sinon, on ajoute les points et on marque l'action
     const updated = await prisma.userPoint.update({
       where: { userId },
       data: {
         points: record.points + pts,
-        actionsDone: { push: actionKey }
+        actionsDone: [...actionsDone, actionKey]
       }
     })
 
+    const updatedActions = Array.isArray(updated.actionsDone)
+      ? updated.actionsDone
+      : []
     return res.status(200).json({
       points: updated.points,
-      actionsDone: Array.isArray(updated.actionsDone) ? updated.actionsDone : [],
-      newlyAdded: true
+      actionsDone: updatedActions
     })
   }
 
