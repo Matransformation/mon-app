@@ -22,10 +22,10 @@ const ACTIONS = [
 
 // Récompenses échangeables
 const REWARDS = [
-  { pts: 20, label: 'Bon de réduction - 5 %' },
-  { pts: 40, label: 'Bon de réduction - 10 %' },
-  { pts: 60, label: 'Bon de réduction - 15 %' },
-  { pts: 80, label: 'Bon de réduction - 20 %' },
+  { pts: 20, label: 'Bon de réduction - 5 % sur Santé Gourmet ' },
+  { pts: 40, label: 'Bon de réduction - 10 % sur Santé Gourmet' },
+  { pts: 60, label: 'Bon de réduction - 15 % sur Santé Gourmet' },
+  { pts: 80, label: 'Bon de réduction - 20 % sur Santé Gourmet' },
 ]
 
 export async function getServerSideProps(ctx) {
