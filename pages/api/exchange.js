@@ -2,8 +2,8 @@
 import { getServerSession } from 'next-auth/next'
 import { authOptions }      from './auth/[...nextauth]'
 import sgMail               from '@sendgrid/mail'
+import prisma               from '../../lib/prisma'
 
-// Utilise la même clé que pour signup.js
 sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 
 export default async function handler(req, res) {
@@ -15,17 +15,16 @@ export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions)
   if (!session) return res.status(401).json({ error: 'Unauthorized' })
 
-  const { rewardLabel } = req.body
-  const userEmail = session.user.email
-  const userName  = session.user.name || userEmail
-
-  // Vérifie bien que EMAIL_FROM est défini et validé chez SendGrid
-  const fromEmail = process.env.EMAIL_FROM
-  if (!fromEmail) {
-    console.error('🚨 EMAIL_FROM non défini !')
-    return res.status(500).json({ error: 'EMAIL_FROM missing' })
+  const { rewardLabel, pts } = req.body
+  if (typeof pts !== 'number') {
+    return res.status(400).json({ error: 'Missing or invalid pts' })
   }
 
+  const userEmail = session.user.email
+  const userName  = session.user.name || userEmail
+  const fromEmail = process.env.EMAIL_FROM
+
+  // 1) Envoi du mail
   const msg = {
     to:      'contact@matransformation.fr',
     from:    { email: fromEmail, name: 'Ma Transformation' },
@@ -37,17 +36,22 @@ export default async function handler(req, res) {
   try {
     const [response] = await sgMail.send(msg)
     console.log('SendGrid status:', response.statusCode)
-    return res.status(200).json({ ok: true })
   } catch (err) {
-    console.error('SendGrid error status:', err.code)
-    if (err.response && err.response.body) {
-      console.error('SendGrid error body:', err.response.body)
-    } else {
-      console.error(err)
-    }
-    return res.status(500).json({
-      error:   'Échec de l’envoi du mail',
-      details: err.response?.body || err.message
+    console.error('SendGrid error:', err.response?.body || err)
+    return res.status(500).json({ error: 'Échec de l’envoi du mail', details: err.response?.body })
+  }
+
+  // 2) Mise à jour de la DB : décrémenter les points
+  try {
+    const userId = session.user.id
+    const updated = await prisma.userPoint.update({
+      where: { userId },
+      data:  { points: { decrement: pts } }
     })
+    // 3) On retourne le nouveau solde
+    return res.status(200).json({ ok: true, points: updated.points })
+  } catch (dbErr) {
+    console.error('Prisma update error:', dbErr)
+    return res.status(500).json({ error: 'Échec mise à jour points' })
   }
 }

@@ -1,8 +1,8 @@
+// pages/user-points.js
 import { useState, useEffect } from 'react'
-import { getServerSession } from 'next-auth/next'
-import { authOptions }    from './api/auth/[...nextauth]'
-import prisma              from '../lib/prisma'
-import Navbar              from '../components/Navbar'
+import { getServerSession }     from 'next-auth/next'
+import { authOptions }          from './api/auth/[...nextauth]'
+import Navbar                   from '../components/Navbar'
 
 // Liens de follow (confiance)
 const SOCIAL_LINKS = {
@@ -22,7 +22,7 @@ const ACTIONS = [
 
 // Récompenses échangeables
 const REWARDS = [
-  { pts: 20, label: 'Bon de réduction - 5 % sur Santé Gourmet ' },
+  { pts: 20, label: 'Bon de réduction - 5 % sur Santé Gourmet' },
   { pts: 40, label: 'Bon de réduction - 10 % sur Santé Gourmet' },
   { pts: 60, label: 'Bon de réduction - 15 % sur Santé Gourmet' },
   { pts: 80, label: 'Bon de réduction - 20 % sur Santé Gourmet' },
@@ -35,6 +35,9 @@ export async function getServerSideProps(ctx) {
   }
 
   const userId = session.user.id
+  // on importe prisma uniquement ici, côté serveur
+  const prisma = (await import('../lib/prisma')).default
+
   let record = await prisma.userPoint.findUnique({ where: { userId } })
   if (!record) {
     record = await prisma.userPoint.create({
@@ -48,34 +51,31 @@ export async function getServerSideProps(ctx) {
 
   return {
     props: {
-      initialPoints:  record.points,
+      initialPoints: record.points,
       initialActions
     }
   }
 }
 
 export default function UserPointsPage({ initialPoints, initialActions }) {
-  const [points,       setPoints]       = useState(initialPoints)
-  const [doneActions,  setDoneActions]  = useState(initialActions)
-  const [loadingKey,   setLoadingKey]   = useState(null)
-  const [exchanging,   setExchanging]   = useState(null)
+  const [points,      setPoints]      = useState(initialPoints)
+  const [doneActions, setDoneActions] = useState(initialActions)
+  const [loadingKey,  setLoadingKey]  = useState(null)
+  const [exchanging,  setExchanging]   = useState(null)
 
   useEffect(() => {
     setPoints(initialPoints)
     setDoneActions(initialActions)
   }, [initialPoints, initialActions])
 
-  const handleFollow = async (key) => {
+  const handleFollow = async key => {
     if (doneActions.includes(key) || loadingKey) return
 
-    // Optimistic update + griser le bouton
     setDoneActions(prev => [...prev, key])
     setLoadingKey(key)
 
-    // Ouvre dans un nouvel onglet sans recharger cette page
     window.open(SOCIAL_LINKS[key], '_blank')
 
-    // Appel serveur en tâche de fond
     const res  = await fetch('/api/user-points', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -83,32 +83,40 @@ export default function UserPointsPage({ initialPoints, initialActions }) {
     })
     const data = await res.json()
 
-    // Met à jour le solde, sans toucher à doneActions local
     setPoints(data.points)
     setLoadingKey(null)
   }
 
-  const handleExchange = async (reward) => {
+  const handleExchange = async reward => {
     if (points < reward.pts || exchanging) return
     setExchanging(reward.pts)
 
-    await fetch('/api/exchange', {
+    const res  = await fetch('/api/exchange', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rewardLabel: reward.label })
+      body: JSON.stringify({
+        rewardLabel: reward.label,
+        pts:         reward.pts
+      })
     })
-    setPoints(p => p - reward.pts)
+    const data = await res.json()
+
+    if (data.ok) {
+      setPoints(data.points)
+      alert(`Votre demande de "${reward.label}" a été envoyée !`)
+    } else {
+      console.error('Exchange error:', data)
+      alert('Une erreur est survenue, merci de réessayer.')
+    }
     setExchanging(null)
-    alert(`Votre demande de "${reward.label}" a été envoyée !`)
   }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Navbar />
-
       <main className="flex-grow w-full">
         <div className="bg-[url('/hero-bg.jpg')] bg-cover bg-center py-20 text-center">
-          <h1 className="text-5xl font-bold text-black text-center">
+          <h1 className="text-5xl font-bold text-black">
             Mes Points Carotte 🥕
           </h1>
         </div>
@@ -117,22 +125,37 @@ export default function UserPointsPage({ initialPoints, initialActions }) {
           {/* Solde */}
           <div className="bg-white shadow-md rounded-lg p-6 text-center">
             <p className="text-lg">Solde de points :</p>
-            <p className="text-4xl text-green-600 font-bold">{points} pts</p>
+            <p className="text-4xl text-green-600 font-bold">
+              {points} pts
+            </p>
           </div>
 
           {/* Actions */}
           <section>
-            <h2 className="text-2xl font-semibold mb-4">Gagne des points</h2>
+            <h2 className="text-2xl font-semibold mb-4">
+              Gagne des points
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {ACTIONS.map(a => {
                 const done = doneActions.includes(a.key)
-                return (
+                return done ? (
+                  <div
+                    key={a.key}
+                    className="flex justify-between items-center p-4 rounded-lg bg-gray-200 cursor-not-allowed"
+                  >
+                    <span>{a.label}</span>
+                    <span className="text-green-600 font-semibold">
+                      +{a.pts} pts
+                    </span>
+                    <span className="ml-4 text-gray-500">Déjà validé</span>
+                  </div>
+                ) : (
                   <button
                     key={a.key}
                     onClick={() => handleFollow(a.key)}
-                    disabled={done || loadingKey === a.key}
+                    disabled={loadingKey === a.key}
                     className={`flex justify-between items-center p-4 rounded-lg shadow-sm transition ${
-                      done
+                      loadingKey === a.key
                         ? 'bg-gray-200 cursor-not-allowed'
                         : 'bg-white hover:bg-green-50'
                     }`}
@@ -141,9 +164,6 @@ export default function UserPointsPage({ initialPoints, initialActions }) {
                     <span className="text-green-600 font-semibold">
                       {loadingKey === a.key ? '…' : `+${a.pts} pts`}
                     </span>
-                    {done && (
-                      <span className="ml-4 text-sm text-gray-500">Déjà validé</span>
-                    )}
                   </button>
                 )
               })}
@@ -152,7 +172,9 @@ export default function UserPointsPage({ initialPoints, initialActions }) {
 
           {/* Récompenses */}
           <section>
-            <h2 className="text-2xl font-semibold mb-4">Échange tes points</h2>
+            <h2 className="text-2xl font-semibold mb-4">
+              Échange tes points
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {REWARDS.map(r => {
                 const disabled = points < r.pts
@@ -168,7 +190,9 @@ export default function UserPointsPage({ initialPoints, initialActions }) {
                     }`}
                   >
                     <span>{r.label}</span>
-                    <span className="text-blue-600 font-semibold">{r.pts} pts</span>
+                    <span className="text-blue-600 font-semibold">
+                      {r.pts} pts
+                    </span>
                     {exchanging === r.pts && (
                       <span className="ml-4 text-sm text-gray-500">
                         En cours…
