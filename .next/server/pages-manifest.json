@@ -2,8 +2,13 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/menu": "pages/menu.js",
-  "/mon-compte": "pages/mon-compte.js",
   "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
-  "/api/subscribe": "pages/api/subscribe.js"
+  "/user-points": "pages/user-points.js",
+  "/dashboard": "pages/dashboard.js",
+  "/login": "pages/login.js",
+  "/api/utilisateur/metabolisme": "pages/api/utilisateur/metabolisme.js",
+  "/mon-compte": "pages/mon-compte.js",
+  "/liste-courses": "pages/liste-courses.js",
+  "/api/menu/[userId]": "pages/api/menu/[userId].js",
+  "/api/utilisateur/[id]": "pages/api/utilisateur/[id].js"
 }

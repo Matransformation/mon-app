@@ -23,6 +23,7 @@
     "cloudinary": "^2.6.1",
     "date-fns": "^4.1.0",
     "formidable": "^3.5.4",
+    "framer-motion": "^12.17.0",
     "html2pdf.js": "^0.10.3",
     "lucide-react": "^0.503.0",
     "micro": "^10.0.1",

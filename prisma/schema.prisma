@@ -56,6 +56,8 @@ model User {
   comments  Comment[]
   likes     Like[]
   temoignages  Temoignage[]   // ← relation inverse
+  points       UserPoint?     // ← relation inverse (champ facultatif, un seul par user)
+
 
 
 
@@ -326,4 +328,16 @@ model Temoignage {
 
   authorId  String
   author    User     @relation(fields: [authorId], references: [id])
+}
+
+model UserPoint {
+  id           String   @id @default(cuid()) @db.VarChar(191)
+  userId       String   @unique @db.VarChar(191)
+  points       Int      @default(0)
+  actionsDone  Json     @default("[]") // stocke les actions sous forme de tableau JSON
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id])
+
+  @@map("UserPoint")
 }
