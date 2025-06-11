@@ -2,10 +2,8 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/menu": "pages/menu.js",
   "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
+  "/dashboard": "pages/dashboard.js",
   "/user-points": "pages/user-points.js",
-  "/api/user-points": "pages/api/user-points.js",
-  "/login": "pages/login.js",
-  "/dashboard": "pages/dashboard.js"
+  "/api/exchange": "pages/api/exchange.js"
 }

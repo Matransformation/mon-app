@@ -38,6 +38,7 @@ export default function Navbar() {
                 <Link href="/mes-favoris" className="text-sm text-gray-700 hover:text-green-700 font-medium">Mes favoris</Link>
                 <Link href="/mon-compte" className="text-sm text-gray-700 hover:text-green-700 font-medium">Mon compte</Link>
                 <Link href="/social" className="text-sm text-gray-700 hover:text-green-700 font-medium">Communauté</Link>
+                <Link href="/user-points" className="text-sm text-gray-700 hover:text-green-700 font-medium">Mes Points Carotte 🥕</Link>
                 <Link href="/videos" className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 py-1 rounded">Tutoriels vidéos</Link>
               </div>
             )}
@@ -100,6 +101,7 @@ export default function Navbar() {
             <Link href="/mes-favoris" className="text-sm text-gray-700 hover:text-green-700 font-medium">Mes favoris</Link>
             <Link href="/mon-compte" className="text-sm text-gray-700 hover:text-green-700 font-medium">Mon compte</Link>
             <Link href="/social" className="text-sm text-gray-700 hover:text-green-700 font-medium">Communauté</Link>
+            <Link href="/user-points" className="text-sm text-gray-700 hover:text-green-700 font-medium">Mes Points Carotte 🥕</Link>
             <Link href="/videos" className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 py-1 rounded">Tutoriels vidéos</Link>
             <button
               onClick={() => signOut()}
