@@ -2,10 +2,13 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/menu": "pages/menu.js",
-  "/mon-compte": "pages/mon-compte.js",
-  "/auth/signin": "pages/auth/signin.js",
-  "/api/menu/[userId]": "pages/api/menu/[userId].js",
+  "/admin/recettes": "pages/admin/recettes.js",
+  "/recettes": "pages/recettes.js",
+  "/admin/recettes/[id]": "pages/admin/recettes/[id].js",
   "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
-  "/api/utilisateur/[id]": "pages/api/utilisateur/[id].js"
+  "/api/ingredients": "pages/api/ingredients.js",
+  "/api/side-types": "pages/api/side-types.js",
+  "/api/categories": "pages/api/categories.js",
+  "/api/recettes": "pages/api/recettes.js",
+  "/api/recettes/[id]": "pages/api/recettes/[id].js"
 }

@@ -9,6 +9,7 @@ function AjouterRecette() {
   const [description, setDescription] = useState("");
   const [preparationTime, setPreparationTime] = useState("");
   const [cookingTime, setCookingTime] = useState("");
+  const [servings, setServings] = useState("");
   const [steps, setSteps] = useState([{ step: "" }]);
   const [ingredientSearch, setIngredientSearch] = useState("");
   const [availableIngredients, setAvailableIngredients] = useState([]);
@@ -96,6 +97,7 @@ function AjouterRecette() {
     formData.append("description", description);
     formData.append("preparationTime", preparationTime);
     formData.append("cookingTime", cookingTime);
+    formData.append("servings", servings);
     formData.append("ingredients", JSON.stringify(ingredientsWithDefaultUnit)); // Envoi des ingrédients avec unité par défaut
     formData.append("steps", JSON.stringify(steps));
     formData.append("categories", JSON.stringify(selectedCategories)); // Envoi des catégories sélectionnées
@@ -140,6 +142,17 @@ function AjouterRecette() {
             <label>Temps cuisson (min)</label>
             <input type="number" className="border p-2 w-full rounded" value={cookingTime} onChange={(e) => setCookingTime(e.target.value)} />
           </div>
+          <div className="flex-1">
+  <label>Nombre de personnes</label>
+  <input
+    type="number"
+    className="border p-2 w-full rounded"
+    value={servings}
+    onChange={(e) => setServings(e.target.value)}
+    required
+  />
+</div>
+
         </div>
 
         <div>

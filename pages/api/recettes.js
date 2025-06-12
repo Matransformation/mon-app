@@ -29,6 +29,7 @@ export default async function handler(req, res) {
         const description     = fields.description?.[0] || "";
         const preparationTime = parseInt(fields.preparationTime?.[0] || "0", 10);
         const cookingTime     = parseInt(fields.cookingTime?.[0] || "0", 10);
+        const servings        = parseInt(fields.servings?.[0] || "0", 10);
         const ingredientsRaw  = fields.ingredients?.[0] || "[]";
         const stepsRaw        = fields.steps?.[0] || "[]";
         const categoriesRaw   = fields.categories?.[0] || "[]";
@@ -82,6 +83,7 @@ export default async function handler(req, res) {
             description,
             preparationTime,
             cookingTime,
+            servings,
             steps,
             photoUrl,
             price: Math.round(totalPrice),

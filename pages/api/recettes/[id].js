@@ -34,7 +34,6 @@ export default async function handler(req, res) {
 
   if (method === "PUT") {
     const form = new IncomingForm({ keepExtensions: true });
-
     form.parse(req, async (err, fields, files) => {
       if (err) {
         console.error("Form parsing error:", err);
@@ -42,18 +41,21 @@ export default async function handler(req, res) {
       }
 
       try {
-        const name = fields.name?.[0] || "";
-        const description = fields.description?.[0] || "";
+        // 👇 Parse du nouveau champ servings
+        const servingsRaw = fields.servings?.[0] || "1";
+        const servings    = parseInt(servingsRaw, 10);
+
+        const name            = fields.name?.[0] || "";
+        const description     = fields.description?.[0] || "";
         const preparationTime = parseInt(fields.preparationTime?.[0] || "0", 10);
-        const cookingTime = parseInt(fields.cookingTime?.[0] || "0", 10);
-        const steps = JSON.parse(fields.steps?.[0] || "[]");
-        const ingredients = JSON.parse(fields.ingredients?.[0] || "[]");
-        const categories = JSON.parse(fields.categories?.[0] || "[]");
-        const allowedSides = JSON.parse(fields.allowedSides?.[0] || "[]");
-        const scalable = JSON.parse(fields.scalable?.[0] || "true");
+        const cookingTime     = parseInt(fields.cookingTime?.[0] || "0", 10);
+        const steps           = JSON.parse(fields.steps?.[0] || "[]");
+        const ingredients     = JSON.parse(fields.ingredients?.[0] || "[]");
+        const categories      = JSON.parse(fields.categories?.[0] || "[]");
+        const allowedSides    = JSON.parse(fields.allowedSides?.[0] || "[]");
+        const scalable        = JSON.parse(fields.scalable?.[0] || "true");
 
         let photoUrl = fields.existingPhoto?.[0] || undefined;
-
         if (files.photo?.[0]) {
           const uploaded = await cloudinary.uploader.upload(files.photo[0].filepath, {
             folder: "recettes",
@@ -61,10 +63,12 @@ export default async function handler(req, res) {
           photoUrl = uploaded.secure_url;
         }
 
+        // Cleanup relations
         await prisma.recetteIngredient.deleteMany({ where: { recetteId: id } });
         await prisma.recetteCategory.deleteMany({ where: { recetteId: id } });
         await prisma.recetteAllowedSide.deleteMany({ where: { recetteId: id } });
 
+        // Mise à jour principale, y compris servings
         await prisma.recette.update({
           where: { id },
           data: {
@@ -72,23 +76,25 @@ export default async function handler(req, res) {
             description,
             preparationTime,
             cookingTime,
+            servings,             // ← inclus ici
             steps,
             photoUrl,
             calories: parseFloat(fields.calories?.[0] || "0"),
-            protein: parseFloat(fields.protein?.[0] || "0"),
-            fat: parseFloat(fields.fat?.[0] || "0"),
-            carbs: parseFloat(fields.carbs?.[0] || "0"),
+            protein:  parseFloat(fields.protein?.[0]  || "0"),
+            fat:      parseFloat(fields.fat?.[0]      || "0"),
+            carbs:    parseFloat(fields.carbs?.[0]    || "0"),
             scalable,
           },
         });
 
+        // Recréation des relations
         if (ingredients.length) {
           await prisma.recetteIngredient.createMany({
             data: ingredients.map((ing) => ({
-              recetteId: id,
+              recetteId:    id,
               ingredientId: ing.id,
-              quantity: parseFloat(ing.quantity),
-              unit: ing.unit || "g",
+              quantity:     parseFloat(ing.quantity),
+              unit:         ing.unit || "g",
             })),
           });
         }
@@ -108,12 +114,13 @@ export default async function handler(req, res) {
           });
         }
 
+        // Retour de la recette mise à jour
         const updated = await prisma.recette.findUnique({
           where: { id },
           include: {
             ingredients: { include: { ingredient: true } },
-            categories: { include: { category: true } },
-            allowedSides: true,
+            categories:  { include: { category: true } },
+            allowedSides:true,
           },
         });
 

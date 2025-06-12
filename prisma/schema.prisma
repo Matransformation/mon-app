@@ -160,6 +160,7 @@ model Recette {
   name             String               @db.VarChar(191)
   
   description      String?              @db.VarChar(191)
+  servings         Int                  @default(1)
   price            Float?
   timeCook         Int?
   timePrep         Int?

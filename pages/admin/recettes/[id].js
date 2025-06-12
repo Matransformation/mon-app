@@ -14,6 +14,7 @@ function EditRecette() {
     description: "",
     preparationTime: "",
     cookingTime: "",
+    servings: "",          // <- ajouté
     steps: [],
     ingredients: [],
     photoUrl: "",
@@ -59,6 +60,7 @@ function EditRecette() {
         ...recette,
         preparationTime: recette.preparationTime.toString(),
         cookingTime: recette.cookingTime.toString(),
+        servings: recette.servings?.toString() || "",  // <- pris en compte
         steps: recette.steps || [],
         ingredients: ingredientsData,
         photoUrl: recette.photoUrl || "",
@@ -182,6 +184,7 @@ function EditRecette() {
     form.append("description", formData.description);
     form.append("preparationTime", formData.preparationTime);
     form.append("cookingTime", formData.cookingTime);
+    form.append("servings", formData.servings);            // <- envoyé
     form.append("steps", JSON.stringify(formData.steps));
     form.append("ingredients", JSON.stringify(formData.ingredients));
     form.append("categories", JSON.stringify(selectedCategories));
@@ -224,7 +227,7 @@ function EditRecette() {
           className="w-full border p-2 rounded"
         />
 
-        {/* Temps */}
+        {/* Temps & Servings */}
         <div className="flex gap-4">
           <div className="flex-1">
             <label>Temps préparation</label>
@@ -241,6 +244,16 @@ function EditRecette() {
               type="number"
               value={formData.cookingTime}
               onChange={(e) => handleChange("cookingTime", e.target.value)}
+              className="w-full border p-2 rounded"
+            />
+          </div>
+          <div className="flex-1">
+            <label>Nombre de personnes</label>
+            <input
+              type="number"
+              min="1"
+              value={formData.servings}
+              onChange={(e) => handleChange("servings", e.target.value)}
               className="w-full border p-2 rounded"
             />
           </div>
@@ -432,4 +445,5 @@ function EditRecette() {
     </div>
   );
 }
+
 export default withAuthProtection(EditRecette);

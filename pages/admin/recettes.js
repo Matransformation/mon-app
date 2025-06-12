@@ -156,6 +156,7 @@ function ListeRecettes() {
 
                 {/* Nutrition */}
                 <div className="text-sm text-gray-800 mb-4 space-y-1">
+                <p>👥 {recette.servings} personne{recette.servings > 1 ? "s" : ""}</p>
                   <p>🔥 {nutrition.calories} kcal</p>
                   <p>🍗 {nutrition.protein} g protéines</p>
                   <p>🧈 {nutrition.fat} g lipides</p>

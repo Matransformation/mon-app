@@ -88,25 +88,51 @@ function RecetteDetail() {
   if (loading) return <div className="text-center mt-10">Chargement...</div>;
   if (!recette) return <div className="text-center mt-10">Recette introuvable.</div>;
 
-  const calories = Math.round(recette.ingredients.reduce((sum, ri) => sum + (ri.ingredient.calories * ri.quantity) / 100, 0));
-  const proteins = Math.round(recette.ingredients.reduce((sum, ri) => sum + (ri.ingredient.protein * ri.quantity) / 100, 0));
-  const fats = Math.round(recette.ingredients.reduce((sum, ri) => sum + (ri.ingredient.fat * ri.quantity) / 100, 0));
-  const carbs = Math.round(recette.ingredients.reduce((sum, ri) => sum + (ri.ingredient.carbs * ri.quantity) / 100, 0));
+  const calories = Math.round(
+    recette.ingredients.reduce((sum, ri) => sum + (ri.ingredient.calories * ri.quantity) / 100, 0)
+  );
+  const proteins = Math.round(
+    recette.ingredients.reduce((sum, ri) => sum + (ri.ingredient.protein * ri.quantity) / 100, 0)
+  );
+  const fats = Math.round(
+    recette.ingredients.reduce((sum, ri) => sum + (ri.ingredient.fat * ri.quantity) / 100, 0)
+  );
+  const carbs = Math.round(
+    recette.ingredients.reduce((sum, ri) => sum + (ri.ingredient.carbs * ri.quantity) / 100, 0)
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Head>
         <title>{recette.name} | MaTransformation</title>
-        <meta name="description" content={`Découvrez cette recette de ${recette.name}`} />
+        <meta
+          name="description"
+          content={`Découvrez cette recette de ${recette.name}`}
+        />
         <meta property="og:title" content={`${recette.name} | MaTransformation`} />
-        <meta property="og:description" content={`Découvrez cette recette de ${recette.name}`} />
-        <meta property="og:image" content={recette.photoUrl || "/images/placeholder.png"} />
+        <meta
+          property="og:description"
+          content={`Découvrez cette recette de ${recette.name}`}
+        />
+        <meta
+          property="og:image"
+          content={recette.photoUrl || "/images/placeholder.png"}
+        />
         <meta property="og:type" content="article" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={`${recette.name} | MaTransformation`} />
-        <meta name="twitter:description" content={`Découvrez cette recette de ${recette.name}`} />
-        <meta name="twitter:image" content={recette.photoUrl || "/images/placeholder.png"} />
-        <link rel="canonical" href={`https://matransformation.fr/recettes/${id}`} />
+        <meta
+          name="twitter:description"
+          content={`Découvrez cette recette de ${recette.name}`}
+        />
+        <meta
+          name="twitter:image"
+          content={recette.photoUrl || "/images/placeholder.png"}
+        />
+        <link
+          rel="canonical"
+          href={`https://matransformation.fr/recettes/${id}`}
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -115,18 +141,24 @@ function RecetteDetail() {
               "@type": "Recipe",
               name: recette.name,
               image: recette.photoUrl || "/images/placeholder.png",
-              description: recette.description || `Découvrez cette recette de ${recette.name}`,
-              recipeYield: "1 portion",
+              description:
+                recette.description || `Découvrez cette recette de ${recette.name}`,
+              recipeYield: `${recette.servings} portion${
+                recette.servings > 1 ? "s" : ""
+              }`,
               prepTime: "PT10M",
               cookTime: "PT15M",
               recipeCategory: "Déjeuner",
               recipeCuisine: "Française",
               author: {
                 "@type": "Person",
-                name: "Clémence et Romain"
+                name: "Clémence et Romain",
               },
-              keywords: "recette équilibrée, rapide, facile, MaTransformation",
-              recipeIngredient: recette.ingredients.map((ri) => `${ri.quantity} ${ri.unit} ${ri.ingredient.name}`),
+              keywords:
+                "recette équilibrée, rapide, facile, MaTransformation",
+              recipeIngredient: recette.ingredients.map(
+                (ri) => `${ri.quantity} ${ri.unit} ${ri.ingredient.name}`
+              ),
               recipeInstructions: recette.steps.map((s) => s.step),
               nutrition: {
                 "@type": "NutritionInformation",
@@ -134,51 +166,81 @@ function RecetteDetail() {
                 proteinContent: `${proteins} g`,
                 fatContent: `${fats} g`,
                 carbohydrateContent: `${carbs} g`,
-              }
-            })
+              },
+            }),
           }}
         />
       </Head>
 
       <Navbar />
 
+      {/* IMAGE + ACTION BUTTONS */}
       <div className="relative h-[60vh] w-full overflow-hidden">
-        <div className="relative w-full h-[60vh]">
-          <Image
-            src={recette.photoUrl || "/images/placeholder.png"}
-            alt={recette.name}
-            layout="fill"
-            objectFit="cover"
-            priority
-          />
-        </div>
-
-        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-white text-center">{recette.name}</h1>
-        </div>
+        <Image
+          src={recette.photoUrl || "/images/placeholder.png"}
+          alt={recette.name}
+          layout="fill"
+          objectFit="cover"
+          priority
+        />
         <div className="absolute top-4 right-4 flex gap-3">
-          <button onClick={handleAddToFavorites} className="p-3 rounded-full bg-white hover:bg-gray-200 shadow-md">
-            <Heart className={isFavori ? "text-red-600 fill-red-600" : "text-red-500"} />
+          <button
+            onClick={handleAddToFavorites}
+            className="p-3 rounded-full bg-white hover:bg-gray-200 shadow-md"
+          >
+            <Heart
+              className={
+                isFavori ? "text-red-600 fill-red-600" : "text-red-500"
+              }
+            />
           </button>
-          <button onClick={handlePrint} className="p-3 rounded-full bg-white hover:bg-gray-200 shadow-md">
+          <button
+            onClick={handlePrint}
+            className="p-3 rounded-full bg-white hover:bg-gray-200 shadow-md"
+          >
             <Printer className="text-blue-600" />
           </button>
-          <button onClick={handleDownloadPDF} className="p-3 rounded-full bg-white hover:bg-gray-200 shadow-md">
+          <button
+            onClick={handleDownloadPDF}
+            className="p-3 rounded-full bg-white hover:bg-gray-200 shadow-md"
+          >
             <Download className="text-green-600" />
           </button>
-          <button onClick={handleShare} className="p-3 rounded-full bg-white hover:bg-gray-200 shadow-md">
+          <button
+            onClick={handleShare}
+            className="p-3 rounded-full bg-white hover:bg-gray-200 shadow-md"
+          >
             <Share2 className="text-purple-600" />
           </button>
         </div>
       </div>
 
+      {/* TITRE ET NOMBRE DE PERSONNES SOUS LA PHOTO */}
+      <div className="bg-white px-6 py-6 text-center shadow-md">
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-800">
+          {recette.name}
+        </h1>
+        {recette.servings && (
+          <p className="text-sm text-gray-600 mt-2">
+            👥 Pour {recette.servings} personne
+            {recette.servings > 1 ? "s" : ""}
+          </p>
+        )}
+      </div>
+
+      {/* CONTENU PRINCIPAL */}
       <div id="recette-pdf-content" className="max-w-5xl mx-auto p-6">
         <div className="text-center mb-8">
-          <p className="text-gray-500 text-lg mb-4">{recette.description}</p>
+          <p className="text-gray-500 text-lg mb-4">
+            {recette.description}
+          </p>
           {recette.categories.length > 0 && (
             <div className="flex justify-center flex-wrap gap-2 mt-4">
               {recette.categories.map((cat) => (
-                <span key={cat.category.id} className="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full">
+                <span
+                  key={cat.category.id}
+                  className="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full"
+                >
                   {cat.category.name}
                 </span>
               ))}
@@ -186,6 +248,7 @@ function RecetteDetail() {
           )}
         </div>
 
+        {/* Ingrédients */}
         <div className="mb-10">
           <h2 className="text-2xl font-bold mb-4">🛒 Ingrédients</h2>
           <ul className="list-disc list-inside space-y-2">
@@ -197,6 +260,7 @@ function RecetteDetail() {
           </ul>
         </div>
 
+        {/* Préparation */}
         <div className="mb-10">
           <h2 className="text-2xl font-bold mb-4">📜 Préparation</h2>
           <ol className="space-y-6 border-l-2 border-blue-400 pl-6">
@@ -211,26 +275,35 @@ function RecetteDetail() {
           </ol>
         </div>
 
+        {/* Valeurs Nutritionnelles */}
         <div className="mb-10">
-          <h2 className="text-2xl font-bold mb-4">🔥 Valeurs Nutritionnelles</h2>
+          <h2 className="text-2xl font-bold mb-4">
+            🔥 Valeurs Nutritionnelles
+          </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-            {["Calories", "Protéines", "Lipides", "Glucides"].map((item, idx) => (
-              <div key={idx} className="bg-white p-4 rounded-lg shadow">
-                <p className="text-sm text-gray-500">{item}</p>
-                <p className="text-xl font-bold mt-1">
-                  {item === "Calories"
-                    ? calories + " kcal"
-                    : item === "Protéines"
-                    ? proteins + " g"
-                    : item === "Lipides"
-                    ? fats + " g"
-                    : carbs + " g"}
-                </p>
-              </div>
-            ))}
+            {["Calories", "Protéines", "Lipides", "Glucides"].map(
+              (item, idx) => (
+                <div
+                  key={idx}
+                  className="bg-white p-4 rounded-lg shadow"
+                >
+                  <p className="text-sm text-gray-500">{item}</p>
+                  <p className="text-xl font-bold mt-1">
+                    {item === "Calories"
+                      ? calories + " kcal"
+                      : item === "Protéines"
+                      ? proteins + " g"
+                      : item === "Lipides"
+                      ? fats + " g"
+                      : carbs + " g"}
+                  </p>
+                </div>
+              )
+            )}
           </div>
         </div>
 
+        {/* Bouton Retour */}
         <div className="text-center">
           <button
             onClick={() => router.push("/recettes")}
