@@ -57,6 +57,8 @@ model User {
   likes     Like[]
   temoignages  Temoignage[]   // ← relation inverse
   points       UserPoint?     // ← relation inverse (champ facultatif, un seul par user)
+  notifications Notification[] // 1-N
+
 
 
 
@@ -341,4 +343,16 @@ model UserPoint {
   user         User     @relation(fields: [userId], references: [id])
 
   @@map("UserPoint")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  message   String
+  opened    Boolean  @default(false)
+  global    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  // rendre userId optionnel pour les notifs globales
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    String?
 }
