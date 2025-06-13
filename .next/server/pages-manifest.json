@@ -2,11 +2,10 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/admin/notifications": "pages/admin/notifications.js",
+  "/notifications": "pages/notifications.js",
   "/api/notifications/unreadCount": "pages/api/notifications/unreadCount.js",
-  "/admin/dashboard": "pages/admin/dashboard.js",
   "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
-  "/api/notifications/[id]": "pages/api/notifications/[id].js",
+  "/admin/notifications": "pages/admin/notifications.js",
   "/mon-compte": "pages/mon-compte.js",
   "/api/notifications": "pages/api/notifications.js"
 }
