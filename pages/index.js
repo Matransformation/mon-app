@@ -50,29 +50,36 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen font-sans text-gray-900">
       <Header />
-
       <main className="flex-1">
         {/* HERO */}
-        <section className="relative flex items-center justify-center text-white bg-orange-500 h-[70vh]">
+        <section className="relative flex items-center justify-center text-white bg-orange-500 h-[70vh] overflow-hidden">
+          {/* Mobile banner */}
           <img
-            src="https://res.cloudinary.com/diccvjf98/image/upload/f_auto,q_auto/v1748242665/hero_izxaoy.jpg"
-            alt="Bannière"
-            className="absolute inset-0 w-full h-full object-cover opacity-50"
-            width="1920"
-            height="1080"
+            src="https://res.cloudinary.com/diccvjf98/image/upload/v1749826619/Design_sans_titre_46_kbofuh.png"
+            alt="Bannière mobile"
+            className="absolute inset-0 w-full h-full object-cover sm:hidden"
             loading="eager"
-            fetchPriority="high"
           />
-          <div className="relative z-10 text-center px-6 max-w-2xl">
-            <h1 className="text-4xl md:text-6xl font-extrabold mb-4">
-              Perdre du poids n’a jamais été aussi simple.
+          {/* Desktop banner */}
+          <img
+            src="https://res.cloudinary.com/diccvjf98/image/upload/v1749824311/Design_sans_titre_44_bcwldm.png"
+            alt="Bannière desktop"
+            className="hidden sm:block absolute inset-0 w-full h-full object-cover"
+            loading="eager"
+          />
+
+          <div className="relative z-10 text-center px-10 sm:px-16 max-w-2xl flex flex-col items-center justify-center h-full">
+            <h1 className="text-2xl sm:text-4xl md:text-6xl font-extrabold mb-4 text-orange-500">
+              Perdre du poids <br className="sm:hidden" />
+              n’a jamais été <br className="sm:hidden" />
+              aussi simple.
             </h1>
-            <p className="text-lg md:text-2xl mb-6">
+            <p className="hidden sm:block text-lg md:text-2xl mb-6 text-orange-500">
               Un accompagnement nutritionnel intelligent, des menus adaptés à ton corps, et un vrai suivi.
             </p>
             <Link
               href="/register"
-              className="bg-white text-orange-500 font-semibold py-3 px-6 rounded-full hover:bg-gray-100 transition"
+              className="bg-orange-500 text-white font-semibold py-3 px-6 rounded-full hover:bg-orange-600 transition text-sm sm:text-base"
             >
               Essayer 7 jours gratuitement
             </Link>
@@ -108,15 +115,13 @@ export default function Home() {
           <h2 className="text-3xl font-bold mb-10">Elles en parlent mieux que nous</h2>
           <div className="max-w-3xl mx-auto space-y-8 text-gray-700 italic text-lg">
             <p>
-              “J’ai perdu 6 kg sans frustration ni régime extrême. Les menus sont clairs, et je me sens enfin accompagnée.”
-              <br />
+              “J’ai perdu 6 kg sans frustration ni régime extrême. Les menus sont clairs, et je me sens enfin accompagnée.”<br />
               <span className="not-italic font-medium text-sm text-orange-500">
                 – Nathalie, 48 ans
               </span>
             </p>
             <p>
-              “Je me sens mieux, j’ai repris le contrôle sur mon alimentation et mon énergie. J’adore ce suivi personnalisé.”
-              <br />
+              “Je me sens mieux, j’ai repris le contrôle sur mon alimentation et mon énergie. J’adore ce suivi personnalisé.”<br />
               <span className="not-italic font-medium text-sm text-orange-500">
                 – Julie, 42 ans
               </span>
@@ -126,9 +131,7 @@ export default function Home() {
 
         {/* FAQ */}
         <section id="faq" className="py-20 bg-white px-6">
-          <h2 className="text-3xl font-bold text-center mb-12">
-            On répond à tes <span className="text-orange-500">questions les plus fréquentes</span>.
-          </h2>
+          <h2 className="text-3xl font-bold text-center mb-12">On répond à tes <span className="text-orange-500">questions les plus fréquentes</span>.</h2>
           <div className="max-w-3xl mx-auto space-y-4">
             {faqs.map((item, idx) => {
               const isOpen = openIndex === idx;
@@ -138,13 +141,9 @@ export default function Home() {
                     className="w-full flex items-center justify-between p-4"
                     onClick={() => setOpenIndex(isOpen ? null : idx)}
                   >
-                    <span
-                      className={`text-left text-lg font-medium transition ${
-                        isOpen ? "text-orange-500" : "text-blue-900"
-                      }`}
-                    >
-                      {item.question}
-                    </span>
+                    <span className={`text-left text-lg font-medium transition ${
+                      isOpen ? "text-orange-500" : "text-blue-900"
+                    }`}>{item.question}</span>
                     <svg
                       className={`h-5 w-5 transform transition-transform ${
                         isOpen ? "rotate-180 text-orange-500" : "text-gray-400"
@@ -162,37 +161,18 @@ export default function Home() {
                       />
                     </svg>
                   </button>
-                  {isOpen && (
-                    <div className="border-t px-4 pb-4 text-gray-700">
-                      <p className="whitespace-pre-line">{item.answer}</p>
-                    </div>
-                  )}
+                  {isOpen && <div className="border-t px-4 pb-4 text-gray-700"><p className="whitespace-pre-line">{item.answer}</p></div>}
                 </div>
               );
             })}
           </div>
 
           <div className="mt-12 text-center">
-            <p className="mb-4 text-gray-700">
-              Une question ? Écris-nous à {" "}
-              <a
-                href="mailto:contact@matransformation.fr"
-                className="text-orange-500 hover:underline"
-              >
-                contact@matransformation.fr
-              </a>
-              .
-            </p>
-            <Link
-              href="/register"
-              className="inline-block bg-orange-500 text-white font-semibold py-3 px-6 rounded hover:bg-orange-600 transition"
-            >
-              Commencer l’essai gratuit
-            </Link>
+            <p className="mb-4 text-gray-700">Une question ? Écris-nous à <a href="mailto:contact@matransformation.fr" className="text-orange-500 hover:underline">contact@matransformation.fr</a>.</p>
+            <Link href="/register" className="inline-block bg-orange-500 text-white font-semibold py-3 px-6 rounded hover:bg-orange-600 transition">Commencer l’essai gratuit</Link>
           </div>
         </section>
       </main>
-
       <Footer />
     </div>
   );
