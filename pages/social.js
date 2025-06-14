@@ -10,7 +10,7 @@ export default function SocialPage() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sortOption, setSortOption] = useState("recent");
-  const [visibleCount, setVisibleCount] = useState(6); // Pagination locale
+  const [visibleCount, setVisibleCount] = useState(6);
 
   const currentUserId = session?.user?.id;
   const isAdmin = session?.user?.role === "admin";
@@ -32,8 +32,29 @@ export default function SocialPage() {
     fetchPosts();
   }, [status]);
 
-  const handleNewPost = (post) => {
+  // Award points for actions via your API
+  const awardPoints = async (actionKey) => {
+    try {
+      await axios.post("/api/user-points", { actionKey });
+    } catch (err) {
+      console.error("Erreur lors de l'attribution des points :", err);
+    }
+  };
+
+  const handleNewPost = async (post) => {
     setPosts((prev) => [post, ...prev]);
+    // Award 5 points for creating a post
+    await awardPoints("create_post");
+  };
+
+  const handleCommentCreated = async (postId, comment) => {
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === postId ? { ...p, comments: [...p.comments, comment] } : p
+      )
+    );
+    // Award 2 points for adding a comment
+    await awardPoints("add_comment");
   };
 
   const handleDeletePost = (id) => {
@@ -49,8 +70,8 @@ export default function SocialPage() {
   const sortedPosts = [...posts].sort((a, b) => {
     if (sortOption === "likes") return b.likes.length - a.likes.length;
     if (sortOption === "comments") return b.comments.length - a.comments.length;
-    if (sortOption === "admin") return b.author?.role === "admin" ? -1 : 1;
-    return new Date(b.createdAt) - new Date(a.createdAt); // default
+    if (sortOption === "admin") return a.author?.role === "admin" ? -1 : 1;
+    return new Date(b.createdAt) - new Date(a.createdAt);
   });
 
   const visiblePosts = sortedPosts.slice(0, visibleCount);
@@ -94,7 +115,7 @@ export default function SocialPage() {
                 key={value}
                 onClick={() => {
                   setSortOption(value);
-                  setVisibleCount(6); // reset pagination on filter
+                  setVisibleCount(6);
                 }}
                 className={`px-4 py-1 rounded-full text-sm border transition ${
                   sortOption === value
@@ -107,14 +128,14 @@ export default function SocialPage() {
             ))}
           </div>
 
-          <NewPostForm authorId={currentUserId} onPostCreated={handleNewPost} />
+          <NewPostForm onPostCreated={handleNewPost} />
 
           {loading ? (
             <p className="text-center text-gray-500 mt-10">Chargement des posts...</p>
           ) : visiblePosts.length === 0 ? (
             <p className="text-center text-gray-500 mt-10">Aucun post pour le moment.</p>
           ) : (
-            <>
+            <> 
               {visiblePosts.map((post) => (
                 <PostCard
                   key={post.id}
@@ -123,6 +144,7 @@ export default function SocialPage() {
                   isAdmin={isAdmin}
                   onDelete={handleDeletePost}
                   onUpdate={handleUpdatePost}
+                  onCommentCreated={handleCommentCreated}
                 />
               ))}
 
