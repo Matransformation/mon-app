@@ -10,89 +10,79 @@ const ACTION_POINTS = {
   follow_clemalauxdiet_instagram:     5,
   follow_clemalauxdiet_facebook:      5,
 
-  // Nouveau barème
+  // Tes nouvelles actions
   create_post:                        5,  // création d’un post
   add_comment:                        2,  // ajout d’un commentaire
 }
 
 export default async function handler(req, res) {
-  // Vérification de session
   const session = await getServerSession(req, res, authOptions)
-  if (!session) {
-    return res.status(401).json({ error: 'Unauthorized' })
-  }
+  if (!session) return res.status(401).json({ error: 'Unauthorized' })
   const userId = session.user.id
 
-  // GET → récupérer l’état actuel
+  // Actions qui ne doivent rapporter qu'une seule fois
+  const onceOnly = [
+    'follow_instagram',
+    'follow_facebook',
+    'follow_clemalauxdiet_instagram',
+    'follow_clemalauxdiet_facebook'
+  ]
+
   if (req.method === 'GET') {
-    let record = await prisma.userPoint.findUnique({
-      where: { userId }
-    })
+    let record = await prisma.userPoint.findUnique({ where: { userId } })
     if (!record) {
       record = await prisma.userPoint.create({
         data: { userId, points: 0, actionsDone: [] }
       })
     }
-    const actionsDone = Array.isArray(record.actionsDone)
-      ? record.actionsDone
-      : []
     return res.status(200).json({
       points: record.points,
-      actionsDone
+      actionsDone: record.actionsDone || []
     })
   }
 
-  // POST → attribuer des points
   if (req.method === 'POST') {
     const { actionKey } = req.body
     const pts = ACTION_POINTS[actionKey]
 
-    // Clé invalide ?
     if (!actionKey || pts === undefined) {
-      return res.status(400).json({ error: 'Invalid action' })
+      return res.status(400).json({ error: `Invalid action: ${actionKey}` })
     }
 
-    // Cherche ou crée le record
-    let record = await prisma.userPoint.findUnique({
-      where: { userId }
-    })
+    let record = await prisma.userPoint.findUnique({ where: { userId } })
     if (!record) {
       record = await prisma.userPoint.create({
         data: { userId, points: 0, actionsDone: [] }
       })
     }
 
-    const actionsDone = Array.isArray(record.actionsDone)
-      ? record.actionsDone
-      : []
+    const actionsDone = Array.isArray(record.actionsDone) ? record.actionsDone : []
 
-    // Si déjà fait, on ne repointe pas
-    if (actionsDone.includes(actionKey)) {
+    // Si c'est une action à faire une seule fois et déjà réalisée, on ne la recompte pas
+    if (onceOnly.includes(actionKey) && actionsDone.includes(actionKey)) {
       return res.status(200).json({
         points: record.points,
         actionsDone
       })
     }
 
-    // Sinon, on met à jour
+    // Mise à jour des points et, le cas échéant, du suivi des actions
     const updated = await prisma.userPoint.update({
       where: { userId },
       data: {
         points: record.points + pts,
-        actionsDone: [...actionsDone, actionKey]
+        actionsDone: onceOnly.includes(actionKey)
+          ? [...actionsDone, actionKey]
+          : actionsDone
       }
     })
 
-    const updatedActions = Array.isArray(updated.actionsDone)
-      ? updated.actionsDone
-      : []
     return res.status(200).json({
       points: updated.points,
-      actionsDone: updatedActions
+      actionsDone: updated.actionsDone || []
     })
   }
 
-  // Méthode non autorisée
-  res.setHeader('Allow', ['GET', 'POST'])
+  res.setHeader('Allow', ['GET','POST'])
   res.status(405).end(`Method ${req.method} Not Allowed`)
 }

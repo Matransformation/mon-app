@@ -6,7 +6,14 @@ import CommentForm from "./CommentForm";
 import axios from "axios";
 import { formatTimeAgo } from "../../utils/date";
 
-export default function PostCard({ post, currentUserId, isAdmin = false, onDelete, onUpdate }) {
+export default function PostCard({
+  post,
+  currentUserId,
+  isAdmin = false,
+  onDelete,
+  onUpdate,
+  onCommentCreated,
+}) {
   const [comments, setComments] = useState(post.comments || []);
   const [likes, setLikes] = useState(post.likes || []);
   const [isEditing, setIsEditing] = useState(false);
@@ -17,8 +24,12 @@ export default function PostCard({ post, currentUserId, isAdmin = false, onDelet
   const isLiked = likes.some((like) => like.userId === currentUserId);
   const isAuthor = post.authorId === currentUserId;
 
+  // Gère l'ajout d'un nouveau commentaire localement et notifie SocialPage
   const handleNewComment = (comment) => {
     setComments((prev) => [...prev, comment]);
+    if (onCommentCreated) {
+      onCommentCreated(post.id, comment);
+    }
   };
 
   const handleToggleLike = (updatedLikes) => {
@@ -140,20 +151,18 @@ export default function PostCard({ post, currentUserId, isAdmin = false, onDelet
           </>
         ) : (
           <>
-            {!isEditing && post.imageUrl && (
-  <div className="relative w-full max-h-[500px] rounded-md overflow-hidden mb-4">
-    <Image
-      src={post.imageUrl}
-      alt={post.content.slice(0, 30) || "Image du post"}
-      layout="responsive"
-      width={700}
-      height={500}
-      objectFit="cover"
-    />
-  </div>
-)}
-
-              
+            {post.imageUrl && (
+              <div className="relative w-full max-h-[500px] rounded-md overflow-hidden mb-4">
+                <Image
+                  src={post.imageUrl}
+                  alt={post.content.slice(0, 30) || "Image du post"}
+                  layout="responsive"
+                  width={700}
+                  height={500}
+                  objectFit="cover"
+                />
+              </div>
+            )}
             <p className="text-gray-800 whitespace-pre-line">{editContent}</p>
           </>
         )}

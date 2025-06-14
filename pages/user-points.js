@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react'
 import { getServerSession }     from 'next-auth/next'
 import { authOptions }          from './api/auth/[...nextauth]'
 import Navbar                   from '../components/Navbar'
+import Link from 'next/link'
+
 
 // Liens de follow (confiance)
 const SOCIAL_LINKS = {
@@ -168,6 +170,26 @@ export default function UserPointsPage({ initialPoints, initialActions }) {
                 )
               })}
             </div>
+{/* Bloc “Gagner des points” */}
+<div className="mt-6 bg-white p-6 rounded-lg shadow-sm space-y-4">
+  <h3 className="text-xl font-semibold text-gray-900">Actions sur le réseau social</h3>
+  <ul className="list-disc list-inside text-gray-700 space-y-1">
+    <li>Publier un post : <strong className="text-green-600">+5 pts</strong></li>
+    <li>Ajouter un commentaire : <strong className="text-green-600">+2 pts</strong></li>
+  </ul>
+  <div className="text-left">
+    <Link
+      href="/social"
+      className="inline-block mt-2 text-white bg-orange-500 hover:bg-orange-600 font-medium py-2 px-4 rounded transition"
+    >
+      📱 Aller au réseau social
+    </Link>
+  </div>
+
+</div>
+
+
+
           </section>
 
           {/* Récompenses */}

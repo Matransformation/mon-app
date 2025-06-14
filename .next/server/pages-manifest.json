@@ -2,14 +2,11 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/": "pages/index.js",
-  "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
-  "/login": "pages/login.js",
-  "/dashboard": "pages/dashboard.js",
   "/api/notifications/unreadCount": "pages/api/notifications/unreadCount.js",
-  "/api/utilisateur/metabolisme": "pages/api/utilisateur/metabolisme.js",
-  "/mon-compte": "pages/mon-compte.js",
   "/user-points": "pages/user-points.js",
-  "/social": "pages/social.js",
-  "/api/posts": "pages/api/posts.js"
+  "/api/user-points": "pages/api/user-points.js",
+  "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
+  "/api/posts/[id]": "pages/api/posts/[id].js",
+  "/api/posts": "pages/api/posts.js",
+  "/social": "pages/social.js"
 }

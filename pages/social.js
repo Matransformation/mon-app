@@ -128,7 +128,11 @@ export default function SocialPage() {
             ))}
           </div>
 
-          <NewPostForm onPostCreated={handleNewPost} />
+          {/* Pass authorId to NewPostForm */}
+          <NewPostForm
+            authorId={currentUserId}
+            onPostCreated={handleNewPost}
+          />
 
           {loading ? (
             <p className="text-center text-gray-500 mt-10">Chargement des posts...</p>
