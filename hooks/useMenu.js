@@ -1,3 +1,4 @@
+// File: hooks/useMenu.js
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import axios from "axios";
@@ -25,6 +26,7 @@ export default function useMenu() {
   // ✅ Permet de forcer un menu à la main, ou de recharger depuis l'API
   const loadData = async (manualMenu = null) => {
     if (manualMenu) {
+      // Si on fournit un menu, on l'utilise directement
       setMenu(manualMenu);
       return;
     }
@@ -47,6 +49,7 @@ export default function useMenu() {
     }
   };
 
+  // Chargement initial & à chaque changement de semaine
   useEffect(() => {
     loadData();
   }, [status, session, weekStart]);
@@ -61,7 +64,7 @@ export default function useMenu() {
     weekStart,
     prevWeek,
     nextWeek,
-    reload: loadData,
+    reload: loadData, // <-- reload(manualMenu?) met à jour menu local ou refetch
     loading,
   };
 }

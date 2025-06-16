@@ -17,28 +17,35 @@ export default function WeekMenu({ user }) {
     proteinRichOptions,
   } = useAccompagnements({ user, reload });
 
+  // Met à jour uniquement le jour concerné
   const updateMenuForDay = async (dayKey) => {
-    const res = await fetch(`/api/menu/day?date=${encodeURIComponent(dayKey)}&userId=${user.id}`);
+    const res = await fetch(
+      `/api/menu/day?date=${encodeURIComponent(dayKey)}&userId=${user.id}`
+    );
     const updatedEntries = await res.json();
 
-    const updatedMenu = menu.filter(m => new Date(m.date).toDateString() !== dayKey);
-    updatedEntries.forEach(entry => updatedMenu.push(entry));
+    const updatedMenu = menu.filter(
+      (m) => new Date(m.date).toDateString() !== dayKey
+    );
+    updatedEntries.forEach((entry) => updatedMenu.push(entry));
     updatedMenu.sort((a, b) => new Date(a.date) - new Date(b.date));
 
     reload(updatedMenu);
   };
 
+  // Ajout d’accompagnements + maj ciblée + mémorisation du jour à scroller
   const safeApplyAccompagnements = async (repasId, accompagnements) => {
     await applyAccompagnements(repasId, accompagnements);
 
-    const repas = menu.find(r => r.id === repasId);
+    const repas = menu.find((r) => r.id === repasId);
     if (!repas) return;
 
     const dayKey = new Date(repas.date).toDateString();
-    setScrollTarget(dayKey); // Retenir le jour pour scroll après update
+    setScrollTarget(dayKey);
     await updateMenuForDay(dayKey);
   };
 
+  // Génération des 7 dates de la semaine
   const start = new Date(weekStart);
   const days = Array.from({ length: 7 }).map((_, idx) => {
     const d = new Date(start);
@@ -49,10 +56,11 @@ export default function WeekMenu({ user }) {
   const [active, setActive] = useState(days[0].toDateString());
   const sectionsRef = useRef({});
 
+  // IntersectionObserver pour suivre le jour actif
   useEffect(() => {
     const observer = new IntersectionObserver(
-      entries => {
-        entries.forEach(e => {
+      (entries) => {
+        entries.forEach((e) => {
           if (e.isIntersecting) {
             setActive(e.target.id);
           }
@@ -61,23 +69,23 @@ export default function WeekMenu({ user }) {
       { rootMargin: "-50% 0px -50% 0px" }
     );
 
-    const els = Object.values(sectionsRef.current).filter(
-      el => el && el instanceof Element
-    );
-    els.forEach(el => observer.observe(el));
+    Object.values(sectionsRef.current)
+      .filter((el) => el instanceof Element)
+      .forEach((el) => observer.observe(el));
 
     return () => observer.disconnect();
   }, [days]);
 
+  // Scroll automatique après mise à jour du menu
   useEffect(() => {
     if (scrollTarget && sectionsRef.current[scrollTarget]) {
-      setTimeout(() => {
-        const section = sectionsRef.current[scrollTarget];
-        const rect = section.getBoundingClientRect();
-        const absoluteTop = rect.top + window.scrollY - 80;
-        window.scrollTo({ top: absoluteTop, behavior: "smooth" });
+      requestAnimationFrame(() => {
+        sectionsRef.current[scrollTarget]?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
         setScrollTarget(null);
-      }, 300);
+      });
     }
   }, [menu]);
 
@@ -97,8 +105,10 @@ export default function WeekMenu({ user }) {
 
       <nav className="mt-6 md:mt-0 sticky top-20 z-30 bg-cream-50 py-2 border-b border-gray-200">
         <ul className="flex justify-between px-2">
-          {days.map(day => {
-            const dow = day.toLocaleDateString("fr-FR", { weekday: "short" }).toUpperCase();
+          {days.map((day) => {
+            const dow = day
+              .toLocaleDateString("fr-FR", { weekday: "short" })
+              .toUpperCase();
             const dd = String(day.getDate()).padStart(2, "0");
             const key = day.toDateString();
             const isActive = active === key;
@@ -108,7 +118,9 @@ export default function WeekMenu({ user }) {
                 <a
                   href={`#${encodeURIComponent(key)}`}
                   className={`flex flex-col items-center gap-1 px-2 py-1 rounded-full transition ${
-                    isActive ? "bg-orange-500 text-white" : "text-gray-700 hover:text-orange-500"
+                    isActive
+                      ? "bg-orange-500 text-white"
+                      : "text-gray-700 hover:text-orange-500"
                   }`}
                 >
                   <span className="text-xs font-medium">{dow}</span>
@@ -127,27 +139,32 @@ export default function WeekMenu({ user }) {
       </nav>
 
       <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-        {days.map(day => {
+        {days.map((day) => {
           const key = day.toDateString();
           return (
             <section
               key={key}
               id={key}
-              ref={el => { sectionsRef.current[key] = el }}
+              ref={(el) => {
+                sectionsRef.current[key] = el;
+              }}
               className="pt-16 scroll-mt-20"
             >
               <DayCard
                 date={day}
-                entries={menu.filter(e => new Date(e.date).toDateString() === key)}
+                entries={menu.filter(
+                  (e) => new Date(e.date).toDateString() === key
+                )}
                 user={user}
                 openModal={setSelectedRepas}
                 applyAccompagnements={safeApplyAccompagnements}
                 removeAccompagnements={removeAccompagnements}
                 allIngredients={allIngredients}
                 proteinRichOptions={proteinRichOptions}
-                onUpdateMeal={updatedRepas => {
-                  const idx = menu.findIndex(m => m.id === updatedRepas.id);
-                  if (idx !== -1) menu[idx] = { ...menu[idx], ...updatedRepas };
+                onUpdateMeal={(updatedRepas) => {
+                  const idx = menu.findIndex((m) => m.id === updatedRepas.id);
+                  if (idx !== -1)
+                    menu[idx] = { ...menu[idx], ...updatedRepas };
                 }}
               />
             </section>
