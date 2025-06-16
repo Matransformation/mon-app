@@ -16,19 +16,28 @@ export default function WeekMenu({ user }) {
     proteinRichOptions,
   } = useAccompagnements({ user, reload });
 
-  // ✅ refs pour le scroll
   const sectionsRef = useRef({});
   const lastActiveDay = useRef(null);
 
-  // ✅ scroll vers un jour après reload
+  // ✅ Scroll vers le jour actif avec fallback mobile
   const scrollToDay = (key) => {
-    const section = sectionsRef.current[key];
-    if (section) {
-      section.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    requestAnimationFrame(() => {
+      const section = sectionsRef.current[key];
+      if (section) {
+        section.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        // Fallback : si la section n’est pas encore montée, on retente après un délai
+        setTimeout(() => {
+          const retrySection = sectionsRef.current[key];
+          if (retrySection) {
+            retrySection.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }, 100);
+      }
+    });
   };
 
-  // ✅ applyAccompagnements + mise à jour ciblée + scroll
+  // ✅ Ajout d’accompagnement + refetch ciblé + scroll de retour
   const safeApplyAccompagnements = async (repasId, accompagnements) => {
     lastActiveDay.current = active;
 
@@ -43,11 +52,10 @@ export default function WeekMenu({ user }) {
 
     await reload(updatedMenu);
 
-    // scroll vers le jour actif après maj
     scrollToDay(lastActiveDay.current);
   };
 
-  // Génère les 7 dates de la semaine
+  // Génère les 7 jours de la semaine
   const start = new Date(weekStart);
   const days = Array.from({ length: 7 }).map((_, idx) => {
     const d = new Date(start);
@@ -55,7 +63,6 @@ export default function WeekMenu({ user }) {
     return d;
   });
 
-  // Pour mettre en surbrillance le jour visible
   const [active, setActive] = useState(days[0].toDateString());
 
   useEffect(() => {
@@ -92,7 +99,7 @@ export default function WeekMenu({ user }) {
         userId={user.id}
       />
 
-      {/* Barre de navigation par jour */}
+      {/* Navigation par jour */}
       <nav className="mt-6 md:mt-0 sticky top-20 z-30 bg-cream-50 py-2 border-b border-gray-200">
         <ul className="flex justify-between px-2">
           {days.map(day => {
@@ -138,9 +145,7 @@ export default function WeekMenu({ user }) {
             <section
               key={key}
               id={key}
-              ref={el => {
-                sectionsRef.current[key] = el;
-              }}
+              ref={el => { sectionsRef.current[key] = el }}
               className="pt-16 scroll-mt-20"
             >
               <DayCard
