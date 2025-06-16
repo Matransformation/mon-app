@@ -1,3 +1,4 @@
+// File: components/Menu/WeekMenu.js
 import React, { useState, useEffect, useRef } from "react";
 import WeekNavigator from "./WeekNavigator";
 import DayCard from "./DayCard";
@@ -8,7 +9,6 @@ import useAccompagnements from "../../hooks/useAccompagnements";
 export default function WeekMenu({ user }) {
   const { menu, weekStart, prevWeek, nextWeek, reload, loading } = useMenu();
   const [selectedRepas, setSelectedRepas] = useState(null);
-  const [scrollTarget, setScrollTarget] = useState(null);
 
   const {
     applyAccompagnements,
@@ -17,35 +17,28 @@ export default function WeekMenu({ user }) {
     proteinRichOptions,
   } = useAccompagnements({ user, reload });
 
-  // Met à jour uniquement le jour concerné
-  const updateMenuForDay = async (dayKey) => {
-    const res = await fetch(
-      `/api/menu/day?date=${encodeURIComponent(dayKey)}&userId=${user.id}`
-    );
-    const updatedEntries = await res.json();
+  // 1) On mémorise le scroll Y avant refresh
+  const [prevScroll, setPrevScroll] = useState(null);
+  const sectionsRef = useRef({});
 
-    const updatedMenu = menu.filter(
-      (m) => new Date(m.date).toDateString() !== dayKey
-    );
-    updatedEntries.forEach((entry) => updatedMenu.push(entry));
-    updatedMenu.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-    reload(updatedMenu);
+  // wrapper qui capture ta position avant d'appeler reload()
+  const safeApplyAccompagnements = async (repas, choix) => {
+    setPrevScroll(window.scrollY);
+    await applyAccompagnements(repas, choix);
+    // reload() sera appelé par applyAccompagnements
   };
 
-  // Ajout d’accompagnements + maj ciblée + mémorisation du jour à scroller
-  const safeApplyAccompagnements = async (repasId, accompagnements) => {
-    await applyAccompagnements(repasId, accompagnements);
+  // 2) Après le reload (menu change), on restaure le scroll exact
+  useEffect(() => {
+    if (prevScroll !== null) {
+      window.scrollTo({ top: prevScroll, behavior: "auto" });
+      setPrevScroll(null);
+    }
+  }, [menu]);
 
-    const repas = menu.find((r) => r.id === repasId);
-    if (!repas) return;
+  // ————————————————————————————————————————————————
 
-    const dayKey = new Date(repas.date).toDateString();
-    setScrollTarget(dayKey);
-    await updateMenuForDay(dayKey);
-  };
-
-  // Génération des 7 dates de la semaine
+  // Génère les 7 dates de la semaine
   const start = new Date(weekStart);
   const days = Array.from({ length: 7 }).map((_, idx) => {
     const d = new Date(start);
@@ -53,41 +46,23 @@ export default function WeekMenu({ user }) {
     return d;
   });
 
+  // Pour mettre en surbrillance le jour visible
   const [active, setActive] = useState(days[0].toDateString());
-  const sectionsRef = useRef({});
 
-  // IntersectionObserver pour suivre le jour actif
   useEffect(() => {
     const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            setActive(e.target.id);
-          }
+      entries => {
+        entries.forEach(e => {
+          if (e.isIntersecting) setActive(e.target.id);
         });
       },
       { rootMargin: "-50% 0px -50% 0px" }
     );
-
     Object.values(sectionsRef.current)
-      .filter((el) => el instanceof Element)
-      .forEach((el) => observer.observe(el));
-
+      .filter(el => el instanceof Element)
+      .forEach(el => observer.observe(el));
     return () => observer.disconnect();
   }, [days]);
-
-  // Scroll automatique après mise à jour du menu
-  useEffect(() => {
-    if (scrollTarget && sectionsRef.current[scrollTarget]) {
-      requestAnimationFrame(() => {
-        sectionsRef.current[scrollTarget]?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-        setScrollTarget(null);
-      });
-    }
-  }, [menu]);
 
   if (loading) {
     return <p className="text-center py-6">Chargement…</p>;
@@ -103,30 +78,25 @@ export default function WeekMenu({ user }) {
         userId={user.id}
       />
 
-      <nav className="mt-6 md:mt-0 sticky top-20 z-30 bg-cream-50 py-2 border-b border-gray-200">
+      <nav className="mt-6 sticky top-20 bg-cream-50 py-2 border-b">
         <ul className="flex justify-between px-2">
-          {days.map((day) => {
-            const dow = day
-              .toLocaleDateString("fr-FR", { weekday: "short" })
-              .toUpperCase();
-            const dd = String(day.getDate()).padStart(2, "0");
+          {days.map(day => {
             const key = day.toDateString();
+            const dow = day.toLocaleDateString("fr-FR", { weekday: "short" }).toUpperCase();
+            const dd = String(day.getDate()).padStart(2, "0");
             const isActive = active === key;
-
             return (
               <li key={key}>
                 <a
                   href={`#${encodeURIComponent(key)}`}
-                  className={`flex flex-col items-center gap-1 px-2 py-1 rounded-full transition ${
-                    isActive
-                      ? "bg-orange-500 text-white"
-                      : "text-gray-700 hover:text-orange-500"
+                  className={`flex flex-col items-center px-2 py-1 rounded-full ${
+                    isActive ? "bg-orange-500 text-white" : "text-gray-700 hover:text-orange-500"
                   }`}
                 >
-                  <span className="text-xs font-medium">{dow}</span>
+                  <span className="text-xs">{dow}</span>
                   <span
                     className={`w-6 h-6 flex items-center justify-center rounded-full font-semibold ${
-                      isActive ? "bg-white text-orange-500" : "bg-transparent"
+                      isActive ? "bg-white text-orange-500" : ""
                     }`}
                   >
                     {dd}
@@ -139,32 +109,27 @@ export default function WeekMenu({ user }) {
       </nav>
 
       <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-        {days.map((day) => {
+        {days.map(day => {
           const key = day.toDateString();
           return (
             <section
               key={key}
               id={key}
-              ref={(el) => {
-                sectionsRef.current[key] = el;
-              }}
+              ref={el => { sectionsRef.current[key] = el; }}
               className="pt-16 scroll-mt-20"
             >
               <DayCard
                 date={day}
-                entries={menu.filter(
-                  (e) => new Date(e.date).toDateString() === key
-                )}
+                entries={menu.filter(e => new Date(e.date).toDateString() === key)}
                 user={user}
                 openModal={setSelectedRepas}
                 applyAccompagnements={safeApplyAccompagnements}
                 removeAccompagnements={removeAccompagnements}
                 allIngredients={allIngredients}
                 proteinRichOptions={proteinRichOptions}
-                onUpdateMeal={(updatedRepas) => {
-                  const idx = menu.findIndex((m) => m.id === updatedRepas.id);
-                  if (idx !== -1)
-                    menu[idx] = { ...menu[idx], ...updatedRepas };
+                onUpdateMeal={updatedRepas => {
+                  const idx = menu.findIndex(m => m.id === updatedRepas.id);
+                  if (idx !== -1) menu[idx] = { ...menu[idx], ...updatedRepas };
                 }}
               />
             </section>
@@ -176,10 +141,7 @@ export default function WeekMenu({ user }) {
         <ChangeRepasModal
           repas={selectedRepas}
           onClose={() => setSelectedRepas(null)}
-          onUpdate={() => {
-            reload();
-            setSelectedRepas(null);
-          }}
+          onUpdate={() => { reload(); setSelectedRepas(null); }}
         />
       )}
     </div>

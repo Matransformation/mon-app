@@ -2,15 +2,11 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/login": "pages/login.js",
-  "/dashboard": "pages/dashboard.js",
-  "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
   "/menu": "pages/menu.js",
   "/api/notifications/unreadCount": "pages/api/notifications/unreadCount.js",
-  "/api/utilisateur/metabolisme": "pages/api/utilisateur/metabolisme.js",
-  "/api/ingredients": "pages/api/ingredients.js",
-  "/api/menu/[userId]": "pages/api/menu/[userId].js",
   "/api/utilisateur/[id]": "pages/api/utilisateur/[id].js",
+  "/api/menu/[userId]": "pages/api/menu/[userId].js",
+  "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
   "/api/menu/accompagnement": "pages/api/menu/accompagnement.js",
-  "/api/menu/repas/[id]": "pages/api/menu/repas/[id].js"
+  "/api/ingredients": "pages/api/ingredients.js"
 }
