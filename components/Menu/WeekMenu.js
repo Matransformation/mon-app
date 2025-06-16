@@ -1,9 +1,8 @@
-// File: components/Menu/WeekMenu.js
 import React, { useState, useEffect, useRef } from "react";
-import WeekNavigator    from "./WeekNavigator";
-import DayCard          from "./DayCard";
+import WeekNavigator from "./WeekNavigator";
+import DayCard from "./DayCard";
 import ChangeRepasModal from "../ChangeRepasModal";
-import useMenu          from "../../hooks/useMenu";
+import useMenu from "../../hooks/useMenu";
 import useAccompagnements from "../../hooks/useAccompagnements";
 
 export default function WeekMenu({ user }) {
@@ -17,6 +16,37 @@ export default function WeekMenu({ user }) {
     proteinRichOptions,
   } = useAccompagnements({ user, reload });
 
+  // ✅ refs pour le scroll
+  const sectionsRef = useRef({});
+  const lastActiveDay = useRef(null);
+
+  // ✅ scroll vers un jour après reload
+  const scrollToDay = (key) => {
+    const section = sectionsRef.current[key];
+    if (section) {
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  // ✅ applyAccompagnements + mise à jour ciblée + scroll
+  const safeApplyAccompagnements = async (repasId, accompagnements) => {
+    lastActiveDay.current = active;
+
+    await applyAccompagnements(repasId, accompagnements);
+
+    const res = await fetch(`/api/menu/repas/${repasId}`);
+    const updatedRepas = await res.json();
+
+    const updatedMenu = menu.map((m) =>
+      m.id === repasId ? { ...m, ...updatedRepas } : m
+    );
+
+    await reload(updatedMenu);
+
+    // scroll vers le jour actif après maj
+    scrollToDay(lastActiveDay.current);
+  };
+
   // Génère les 7 dates de la semaine
   const start = new Date(weekStart);
   const days = Array.from({ length: 7 }).map((_, idx) => {
@@ -27,7 +57,6 @@ export default function WeekMenu({ user }) {
 
   // Pour mettre en surbrillance le jour visible
   const [active, setActive] = useState(days[0].toDateString());
-  const sectionsRef = useRef({});
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -41,7 +70,6 @@ export default function WeekMenu({ user }) {
       { rootMargin: "-50% 0px -50% 0px" }
     );
 
-    // Ne garder que les éléments DOM valides
     const els = Object.values(sectionsRef.current).filter(
       el => el && el instanceof Element
     );
@@ -64,13 +92,14 @@ export default function WeekMenu({ user }) {
         userId={user.id}
       />
 
-      {/* Barre de nav “piliers” */}
-      <nav className="mt-6 md:mt-0 sticky top-20 z-30 bg-cream-50 py-2 border-b border-gray-200">        <ul className="flex justify-between px-2">
+      {/* Barre de navigation par jour */}
+      <nav className="mt-6 md:mt-0 sticky top-20 z-30 bg-cream-50 py-2 border-b border-gray-200">
+        <ul className="flex justify-between px-2">
           {days.map(day => {
             const dow = day
               .toLocaleDateString("fr-FR", { weekday: "short" })
-              .toUpperCase(); // ex: 'LUN'
-            const dd  = day.getDate().toString().padStart(2, "0"); // '09'
+              .toUpperCase();
+            const dd = day.getDate().toString().padStart(2, "0");
             const key = day.toDateString();
             const isActive = active === key;
 
@@ -109,7 +138,9 @@ export default function WeekMenu({ user }) {
             <section
               key={key}
               id={key}
-              ref={el => { sectionsRef.current[key] = el }}
+              ref={el => {
+                sectionsRef.current[key] = el;
+              }}
               className="pt-16 scroll-mt-20"
             >
               <DayCard
@@ -119,13 +150,14 @@ export default function WeekMenu({ user }) {
                 )}
                 user={user}
                 openModal={setSelectedRepas}
-                applyAccompagnements={applyAccompagnements}
+                applyAccompagnements={safeApplyAccompagnements}
                 removeAccompagnements={removeAccompagnements}
                 allIngredients={allIngredients}
                 proteinRichOptions={proteinRichOptions}
                 onUpdateMeal={updatedRepas => {
                   const idx = menu.findIndex(m => m.id === updatedRepas.id);
-                  if (idx !== -1) menu[idx] = { ...menu[idx], ...updatedRepas };
+                  if (idx !== -1)
+                    menu[idx] = { ...menu[idx], ...updatedRepas };
                 }}
               />
             </section>
@@ -137,7 +169,10 @@ export default function WeekMenu({ user }) {
         <ChangeRepasModal
           repas={selectedRepas}
           onClose={() => setSelectedRepas(null)}
-          onUpdate={() => { reload(); setSelectedRepas(null); }}
+          onUpdate={() => {
+            reload();
+            setSelectedRepas(null);
+          }}
         />
       )}
     </div>
