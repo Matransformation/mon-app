@@ -19,25 +19,19 @@ export default function WeekMenu({ user }) {
   const sectionsRef = useRef({});
   const lastActiveDay = useRef(null);
 
-  // ✅ Scroll vers le jour actif avec fallback mobile
+  // ✅ Scroll manuel basé sur position absolue — fonctionne partout
   const scrollToDay = (key) => {
-    requestAnimationFrame(() => {
+    setTimeout(() => {
       const section = sectionsRef.current[key];
       if (section) {
-        section.scrollIntoView({ behavior: "smooth", block: "start" });
-      } else {
-        // Fallback : si la section n’est pas encore montée, on retente après un délai
-        setTimeout(() => {
-          const retrySection = sectionsRef.current[key];
-          if (retrySection) {
-            retrySection.scrollIntoView({ behavior: "smooth", block: "start" });
-          }
-        }, 100);
+        const rect = section.getBoundingClientRect();
+        const absoluteTop = rect.top + window.scrollY - 80; // ajuster selon ta navbar
+        window.scrollTo({ top: absoluteTop, behavior: "smooth" });
       }
-    });
+    }, 200); // laisse le temps au DOM de se mettre à jour
   };
 
-  // ✅ Ajout d’accompagnement + refetch ciblé + scroll de retour
+  // ✅ Ajout + refetch ciblé + scroll
   const safeApplyAccompagnements = async (repasId, accompagnements) => {
     lastActiveDay.current = active;
 
@@ -51,11 +45,9 @@ export default function WeekMenu({ user }) {
     );
 
     await reload(updatedMenu);
-
     scrollToDay(lastActiveDay.current);
   };
 
-  // Génère les 7 jours de la semaine
   const start = new Date(weekStart);
   const days = Array.from({ length: 7 }).map((_, idx) => {
     const d = new Date(start);
@@ -99,7 +91,7 @@ export default function WeekMenu({ user }) {
         userId={user.id}
       />
 
-      {/* Navigation par jour */}
+      {/* Navigation des jours */}
       <nav className="mt-6 md:mt-0 sticky top-20 z-30 bg-cream-50 py-2 border-b border-gray-200">
         <ul className="flex justify-between px-2">
           {days.map(day => {
