@@ -14,3 +14,4 @@ Host: https://matransformation.fr
 
 # Sitemaps
 Sitemap: https://matransformation.fr/sitemap.xml
+Sitemap: https://matransformation.fr/server-sitemap.xml

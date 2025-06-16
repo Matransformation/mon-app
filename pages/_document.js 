@@ -1,26 +1,26 @@
-// pages/_document.js
+// File: pages/_document.js
 import { Html, Head, Main, NextScript } from "next/document";
 
 export default function Document() {
   return (
     <Html lang="fr">
       <Head>
-        {/* ✅ Cookiebot activé */}
+        {/* ✅ Cookiebot */}
         <script
           id="Cookiebot"
           src="https://consent.cookiebot.com/uc.js"
           data-cbid="7373a41e-4cd9-4c23-9d99-089181576d59"
           data-blockingmode="auto"
           type="text/javascript"
-        ></script>
+        />
 
-        {/* ✅ Google Analytics – bloqué par Cookiebot jusqu’à consentement */}
+        {/* ✅ Google Analytics – bloqué par Cookiebot */}
         <script
           type="text/plain"
           data-cookieconsent="marketing"
           async
           src="https://www.googletagmanager.com/gtag/js?id=G-J3JHVGXW4Z"
-        ></script>
+        />
         <script
           type="text/plain"
           data-cookieconsent="marketing"
@@ -32,9 +32,9 @@ export default function Document() {
               gtag('config', 'G-J3JHVGXW4Z', { anonymize_ip: true });
             `,
           }}
-        ></script>
+        />
 
-        {/* ✅ Facebook Pixel – bloqué par Cookiebot jusqu’à consentement */}
+        {/* ✅ Facebook Pixel – bloqué par Cookiebot */}
         <script
           type="text/plain"
           data-cookieconsent="marketing"
@@ -53,15 +53,43 @@ export default function Document() {
               fbq('track', 'PageView');
             `,
           }}
-        ></script>
+        />
 
-        {/* ✅ Favicons & Manifest */}
+        {/* ✅ Favicons */}
         <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180x180.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-        <link rel="manifest" href="/site.webmanifest" />
-        <meta name="theme-color" content="#ffa500" />
+        <link
+          rel="apple-touch-icon"
+          sizes="180x180"
+          href="/favicon-180x180.png"
+        />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="32x32"
+          href="/favicon-32x32.png"
+        />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="16x16"
+          href="/favicon-16x16.png"
+        />
+
+        {/* ✅ PWA manifest & theme color */}
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#fb8905" />
+
+        {/* ✅ iOS support */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
+        <link
+          rel="apple-touch-icon"
+          href="/icons/icon-192.png"
+          sizes="192x192"
+        />
       </Head>
       <body>
         <noscript>
