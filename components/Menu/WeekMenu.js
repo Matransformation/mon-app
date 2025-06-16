@@ -1,15 +1,17 @@
 // File: components/Menu/WeekMenu.js
 import React, { useState, useEffect, useRef } from "react";
-import WeekNavigator from "./WeekNavigator";
-import DayCard from "./DayCard";
+import WeekNavigator    from "./WeekNavigator";
+import DayCard          from "./DayCard";
 import ChangeRepasModal from "../ChangeRepasModal";
-import useMenu from "../../hooks/useMenu";
+import useMenu          from "../../hooks/useMenu";
 import useAccompagnements from "../../hooks/useAccompagnements";
 
 export default function WeekMenu({ user }) {
+  // Récupération du menu et de la fonction reload
   const { menu, weekStart, prevWeek, nextWeek, reload, loading } = useMenu();
   const [selectedRepas, setSelectedRepas] = useState(null);
 
+  // Hook d’accompagnements d’origine
   const {
     applyAccompagnements,
     removeAccompagnements,
@@ -17,18 +19,30 @@ export default function WeekMenu({ user }) {
     proteinRichOptions,
   } = useAccompagnements({ user, reload });
 
-  // 1) On mémorise le scroll Y avant refresh
+  // États pour restaurer la position de scroll
   const [prevScroll, setPrevScroll] = useState(null);
   const sectionsRef = useRef({});
 
-  // wrapper qui capture ta position avant d'appeler reload()
+  // Wrapper pour ajouter un accompagnement sans perdre la position
   const safeApplyAccompagnements = async (repas, choix) => {
     setPrevScroll(window.scrollY);
     await applyAccompagnements(repas, choix);
-    // reload() sera appelé par applyAccompagnements
   };
 
-  // 2) Après le reload (menu change), on restaure le scroll exact
+  // Wrapper pour supprimer un accompagnement sans perdre la position
+  const safeRemoveAccompagnements = async (repas, ingredientId) => {
+    setPrevScroll(window.scrollY);
+    await removeAccompagnements(repas, ingredientId);
+  };
+
+  // Wrapper pour changer la recette sans perdre la position
+  const safeChangeRecette = async () => {
+    setPrevScroll(window.scrollY);
+    await reload();
+    setSelectedRepas(null);
+  };
+
+  // Après chaque reload (changement de menu), on restaure le scroll
   useEffect(() => {
     if (prevScroll !== null) {
       window.scrollTo({ top: prevScroll, behavior: "auto" });
@@ -36,9 +50,7 @@ export default function WeekMenu({ user }) {
     }
   }, [menu]);
 
-  // ————————————————————————————————————————————————
-
-  // Génère les 7 dates de la semaine
+  // Génération des 7 dates de la semaine
   const start = new Date(weekStart);
   const days = Array.from({ length: 7 }).map((_, idx) => {
     const d = new Date(start);
@@ -46,14 +58,17 @@ export default function WeekMenu({ user }) {
     return d;
   });
 
-  // Pour mettre en surbrillance le jour visible
+  // Pour surligner le jour visible
   const [active, setActive] = useState(days[0].toDateString());
 
+  // IntersectionObserver pour détecter le jour visible
   useEffect(() => {
     const observer = new IntersectionObserver(
       entries => {
         entries.forEach(e => {
-          if (e.isIntersecting) setActive(e.target.id);
+          if (e.isIntersecting) {
+            setActive(e.target.id);
+          }
         });
       },
       { rootMargin: "-50% 0px -50% 0px" }
@@ -78,25 +93,29 @@ export default function WeekMenu({ user }) {
         userId={user.id}
       />
 
-      <nav className="mt-6 sticky top-20 bg-cream-50 py-2 border-b">
+      <nav className="mt-6 md:mt-0 sticky top-20 z-30 bg-cream-50 py-2 border-b border-gray-200">
         <ul className="flex justify-between px-2">
           {days.map(day => {
             const key = day.toDateString();
             const dow = day.toLocaleDateString("fr-FR", { weekday: "short" }).toUpperCase();
-            const dd = String(day.getDate()).padStart(2, "0");
+            const dd  = String(day.getDate()).padStart(2, "0");
             const isActive = active === key;
             return (
               <li key={key}>
                 <a
                   href={`#${encodeURIComponent(key)}`}
-                  className={`flex flex-col items-center px-2 py-1 rounded-full ${
-                    isActive ? "bg-orange-500 text-white" : "text-gray-700 hover:text-orange-500"
+                  className={`flex flex-col items-center gap-1 px-2 py-1 rounded-full transition ${
+                    isActive
+                      ? "bg-orange-500 text-white"
+                      : "text-gray-700 hover:text-orange-500"
                   }`}
                 >
-                  <span className="text-xs">{dow}</span>
+                  <span className="text-xs font-medium">{dow}</span>
                   <span
                     className={`w-6 h-6 flex items-center justify-center rounded-full font-semibold ${
-                      isActive ? "bg-white text-orange-500" : ""
+                      isActive
+                        ? "bg-white text-orange-500"
+                        : "bg-transparent"
                     }`}
                   >
                     {dd}
@@ -124,7 +143,7 @@ export default function WeekMenu({ user }) {
                 user={user}
                 openModal={setSelectedRepas}
                 applyAccompagnements={safeApplyAccompagnements}
-                removeAccompagnements={removeAccompagnements}
+                removeAccompagnements={safeRemoveAccompagnements}
                 allIngredients={allIngredients}
                 proteinRichOptions={proteinRichOptions}
                 onUpdateMeal={updatedRepas => {
@@ -141,7 +160,7 @@ export default function WeekMenu({ user }) {
         <ChangeRepasModal
           repas={selectedRepas}
           onClose={() => setSelectedRepas(null)}
-          onUpdate={() => { reload(); setSelectedRepas(null); }}
+          onUpdate={safeChangeRecette}
         />
       )}
     </div>

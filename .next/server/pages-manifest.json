@@ -3,10 +3,13 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/menu": "pages/menu.js",
+  "/api/ingredients": "pages/api/ingredients.js",
+  "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
   "/api/notifications/unreadCount": "pages/api/notifications/unreadCount.js",
   "/api/utilisateur/[id]": "pages/api/utilisateur/[id].js",
   "/api/menu/[userId]": "pages/api/menu/[userId].js",
-  "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
+  "/api/recettes": "pages/api/recettes.js",
+  "/api/menu/repas/[id]": "pages/api/menu/repas/[id].js",
   "/api/menu/accompagnement": "pages/api/menu/accompagnement.js",
-  "/api/ingredients": "pages/api/ingredients.js"
+  "/api/menu/repas/[id]/accompagnements/[ingredientId]": "pages/api/menu/repas/[id]/accompagnements/[ingredientId].js"
 }
