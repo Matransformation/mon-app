@@ -8,6 +8,7 @@ import useAccompagnements from "../../hooks/useAccompagnements";
 export default function WeekMenu({ user }) {
   const { menu, weekStart, prevWeek, nextWeek, reload, loading } = useMenu();
   const [selectedRepas, setSelectedRepas] = useState(null);
+  const [scrollTarget, setScrollTarget] = useState(null);
 
   const {
     applyAccompagnements,
@@ -16,36 +17,26 @@ export default function WeekMenu({ user }) {
     proteinRichOptions,
   } = useAccompagnements({ user, reload });
 
-  const sectionsRef = useRef({});
-  const lastActiveDay = useRef(null);
+  const updateMenuForDay = async (dayKey) => {
+    const res = await fetch(`/api/menu/day?date=${encodeURIComponent(dayKey)}&userId=${user.id}`);
+    const updatedEntries = await res.json();
 
-  // ✅ Scroll manuel basé sur position absolue — fonctionne partout
-  const scrollToDay = (key) => {
-    setTimeout(() => {
-      const section = sectionsRef.current[key];
-      if (section) {
-        const rect = section.getBoundingClientRect();
-        const absoluteTop = rect.top + window.scrollY - 80; // ajuster selon ta navbar
-        window.scrollTo({ top: absoluteTop, behavior: "smooth" });
-      }
-    }, 200); // laisse le temps au DOM de se mettre à jour
+    const updatedMenu = menu.filter(m => new Date(m.date).toDateString() !== dayKey);
+    updatedEntries.forEach(entry => updatedMenu.push(entry));
+    updatedMenu.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    reload(updatedMenu);
   };
 
-  // ✅ Ajout + refetch ciblé + scroll
   const safeApplyAccompagnements = async (repasId, accompagnements) => {
-    lastActiveDay.current = active;
-
     await applyAccompagnements(repasId, accompagnements);
 
-    const res = await fetch(`/api/menu/repas/${repasId}`);
-    const updatedRepas = await res.json();
+    const repas = menu.find(r => r.id === repasId);
+    if (!repas) return;
 
-    const updatedMenu = menu.map((m) =>
-      m.id === repasId ? { ...m, ...updatedRepas } : m
-    );
-
-    await reload(updatedMenu);
-    scrollToDay(lastActiveDay.current);
+    const dayKey = new Date(repas.date).toDateString();
+    setScrollTarget(dayKey); // Retenir le jour pour scroll après update
+    await updateMenuForDay(dayKey);
   };
 
   const start = new Date(weekStart);
@@ -56,6 +47,7 @@ export default function WeekMenu({ user }) {
   });
 
   const [active, setActive] = useState(days[0].toDateString());
+  const sectionsRef = useRef({});
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -77,6 +69,18 @@ export default function WeekMenu({ user }) {
     return () => observer.disconnect();
   }, [days]);
 
+  useEffect(() => {
+    if (scrollTarget && sectionsRef.current[scrollTarget]) {
+      setTimeout(() => {
+        const section = sectionsRef.current[scrollTarget];
+        const rect = section.getBoundingClientRect();
+        const absoluteTop = rect.top + window.scrollY - 80;
+        window.scrollTo({ top: absoluteTop, behavior: "smooth" });
+        setScrollTarget(null);
+      }, 300);
+    }
+  }, [menu]);
+
   if (loading) {
     return <p className="text-center py-6">Chargement…</p>;
   }
@@ -91,14 +95,11 @@ export default function WeekMenu({ user }) {
         userId={user.id}
       />
 
-      {/* Navigation des jours */}
       <nav className="mt-6 md:mt-0 sticky top-20 z-30 bg-cream-50 py-2 border-b border-gray-200">
         <ul className="flex justify-between px-2">
           {days.map(day => {
-            const dow = day
-              .toLocaleDateString("fr-FR", { weekday: "short" })
-              .toUpperCase();
-            const dd = day.getDate().toString().padStart(2, "0");
+            const dow = day.toLocaleDateString("fr-FR", { weekday: "short" }).toUpperCase();
+            const dd = String(day.getDate()).padStart(2, "0");
             const key = day.toDateString();
             const isActive = active === key;
 
@@ -107,17 +108,13 @@ export default function WeekMenu({ user }) {
                 <a
                   href={`#${encodeURIComponent(key)}`}
                   className={`flex flex-col items-center gap-1 px-2 py-1 rounded-full transition ${
-                    isActive
-                      ? "bg-orange-500 text-white"
-                      : "text-gray-700 hover:text-orange-500"
+                    isActive ? "bg-orange-500 text-white" : "text-gray-700 hover:text-orange-500"
                   }`}
                 >
                   <span className="text-xs font-medium">{dow}</span>
                   <span
                     className={`w-6 h-6 flex items-center justify-center rounded-full font-semibold ${
-                      isActive
-                        ? "bg-white text-orange-500"
-                        : "bg-transparent"
+                      isActive ? "bg-white text-orange-500" : "bg-transparent"
                     }`}
                   >
                     {dd}
@@ -129,7 +126,6 @@ export default function WeekMenu({ user }) {
         </ul>
       </nav>
 
-      {/* Grille des jours */}
       <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
         {days.map(day => {
           const key = day.toDateString();
@@ -142,9 +138,7 @@ export default function WeekMenu({ user }) {
             >
               <DayCard
                 date={day}
-                entries={menu.filter(
-                  e => new Date(e.date).toDateString() === key
-                )}
+                entries={menu.filter(e => new Date(e.date).toDateString() === key)}
                 user={user}
                 openModal={setSelectedRepas}
                 applyAccompagnements={safeApplyAccompagnements}
@@ -153,8 +147,7 @@ export default function WeekMenu({ user }) {
                 proteinRichOptions={proteinRichOptions}
                 onUpdateMeal={updatedRepas => {
                   const idx = menu.findIndex(m => m.id === updatedRepas.id);
-                  if (idx !== -1)
-                    menu[idx] = { ...menu[idx], ...updatedRepas };
+                  if (idx !== -1) menu[idx] = { ...menu[idx], ...updatedRepas };
                 }}
               />
             </section>
