@@ -3,10 +3,9 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/training": "pages/training.js",
-  "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
-  "/admin/workouts": "pages/admin/workouts.js",
-  "/api/notifications/unreadCount": "pages/api/notifications/unreadCount.js",
-  "/api/workouts/[workoutId]/sessions": "pages/api/workouts/[workoutId]/sessions.js",
   "/api/workouts": "pages/api/workouts.js",
-  "/training/session/[id]": "pages/training/session/[id].js"
+  "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
+  "/api/notifications/unreadCount": "pages/api/notifications/unreadCount.js",
+  "/training/session/[id]": "pages/training/session/[id].js",
+  "/api/workouts/[workoutId]/sessions": "pages/api/workouts/[workoutId]/sessions.js"
 }

@@ -181,7 +181,7 @@ export default function SessionInterface({ workout, exercises }) {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-md">
-      <audio ref={bgAudioRef} src="/bg-music.mp3" loop style={{ display: 'none' }} />
+      <audio ref={bgAudioRef} src="/bg-music.MP3" loop style={{ display: 'none' }} />
 
       {isRestPhase && (
         <div className="mb-4 px-4 py-1 text-sm text-white bg-green-600 rounded-full text-center w-fit mx-auto">
