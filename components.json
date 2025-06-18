@@ -1,0 +1,12 @@
+{
+    "path": "./components",
+    "project": "default",
+    "style": "default",
+    "typescript": false,
+    "tailwind": true,
+    "aliases": {
+      "components": "../../components",
+      "utils": "../../lib/utils"
+    }
+  }
+  

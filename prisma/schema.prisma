@@ -58,6 +58,8 @@ model User {
   temoignages  Temoignage[]   // ← relation inverse
   points       UserPoint?     // ← relation inverse (champ facultatif, un seul par user)
   notifications Notification[] // 1-N
+  trainingSessions TrainingSession[] // 👈 à ajouter
+
 
 
 
@@ -355,4 +357,62 @@ model Notification {
   // rendre userId optionnel pour les notifs globales
   user      User?    @relation(fields: [userId], references: [id])
   userId    String?
+}
+
+model Exercise {
+  id           String             @id @default(cuid()) @db.VarChar(191)
+  name         String             @db.VarChar(191)
+  videoUrl     String?            @db.VarChar(191)
+  description  String?            @db.VarChar(191)
+  instructions String?            @db.Text
+
+  workouts     WorkoutExercise[]  // ← relation multiple
+  @@map("Exercise")
+}
+
+model Workout {
+  id        String             @id @default(cuid()) @db.VarChar(191)
+  title     String             @db.VarChar(191)
+  imageUrl  String?  @db.VarChar(500)    // ✅ image facultative
+  category  String?  @db.VarChar(100)    // ✅ catégorie facultative
+  difficulty_level Int?        // 👈 Ajouté ici
+  sessions  TrainingSession[]
+  exercises WorkoutExercise[]  // ← relation multiple
+
+  @@map("Workout")
+}
+
+// 🔁 Modèle pivot many-to-many
+model WorkoutExercise {
+  id             String   @id @default(cuid()) @db.VarChar(191)
+  workout        Workout  @relation(fields: [workoutId], references: [id])
+  workoutId      String   @db.VarChar(191)
+
+  exercise       Exercise @relation(fields: [exerciseId], references: [id])
+  exerciseId     String   @db.VarChar(191)
+
+  orderIndex     Int
+  // 🔥 Nouveau : on remplace l’ancien “sets” par deux champs distincts
+  duration       Int?     // durée en secondes (mode “Temps”)
+  repCount       Int?     // nombre de répétitions (mode “Répétitions”)
+  restDuration   Int?     @default(30)    // 🔥 Temps de repos après cet exercice (en s)
+  circuitId      String?  @db.VarChar(191)
+  circuitRounds  Int?
+
+  @@map("WorkoutExercise")
+}
+
+
+
+model TrainingSession {
+  id          String   @id @default(cuid()) @db.VarChar(191)
+  userId      String   @db.VarChar(191)
+  workoutId   String   @db.VarChar(191)
+  completedAt DateTime @default(now())
+  calories    Int?
+
+  user        User     @relation(fields: [userId], references: [id])
+  workout     Workout  @relation(fields: [workoutId], references: [id])
+
+  @@map("TrainingSession")
 }

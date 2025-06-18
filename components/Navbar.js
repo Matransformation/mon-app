@@ -52,6 +52,9 @@ export default function Navbar() {
                 <Link href="/dashboard" className="text-sm text-gray-700 hover:text-green-700 font-medium">
                   Dashboard
                 </Link>
+                <Link href="/training" className="text-sm text-gray-700 hover:text-green-700 font-medium">
+                  Fitness
+                </Link>
                 <Link href="/recettes" className="text-sm text-gray-700 hover:text-green-700 font-medium">
                   Recettes
                 </Link>
@@ -138,6 +141,9 @@ export default function Navbar() {
           <div className="mt-3 flex flex-col gap-3 md:hidden">
             <Link href="/dashboard" className="text-sm text-gray-700 hover:text-green-700 font-medium">
               Dashboard
+            </Link>
+            <Link href="/training" className="text-sm text-gray-700 hover:text-green-700 font-medium">
+              Fitness
             </Link>
             <Link href="/recettes" className="text-sm text-gray-700 hover:text-green-700 font-medium">
               Recettes
