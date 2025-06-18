@@ -30,6 +30,14 @@ export default function SessionInterface({ workout, exercises }) {
   const { data: session } = useSession()
   const user = session?.user
 
+  if (!workout || !exercises) {
+    return (
+      <div className="container mx-auto px-4 py-8 text-center text-gray-500">
+        Erreur : entraînement introuvable.
+      </div>
+    )
+  }
+
   const [videoPlaying, setVideoPlaying] = useState(false)
   const bgAudioRef = useRef(null)
   const [sessionStarted, setSessionStarted] = useState(false)
