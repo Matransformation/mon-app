@@ -52,21 +52,51 @@ model User {
   passwordResetTokens     PasswordResetToken[]
   repasJournaliers        RepasJournalier[]
   sessions                Session[]                @relation("UserSessions")
-  posts     Post[]
-  comments  Comment[]
-  likes     Like[]
-  temoignages  Temoignage[]   // ← relation inverse
-  points       UserPoint?     // ← relation inverse (champ facultatif, un seul par user)
-  notifications Notification[] // 1-N
-  trainingSessions TrainingSession[] // 👈 à ajouter
-
-
-
-
-
+  posts                   Post[]
+  comments                Comment[]
+  likes                   Like[]
+  temoignages             Temoignage[]
+  points                  UserPoint?
+  notifications           Notification[]
+  trainingSessions        TrainingSession[]
+  spins                   SpinHistory[]            // 👈 relation avec les spins
+  rouletteDraws RouletteDraw[]
 
   @@map("Utilisateur")
 }
+
+model RouletteItem {
+  id          String   @id @default(cuid()) @db.VarChar(191)
+  label       String   @db.VarChar(191)
+  probability Float    // entre 0 et 1 (ex : 0.1 = 10%)
+  isSuperDraw    Boolean        @default(false)      // ← nouveau champ
+  couponCode     String?        @db.VarChar(100)      // ← nouveau, facultatif
+  createdAt   DateTime @default(now())
+  draws       RouletteDraw[]
+}
+
+model RouletteDraw {
+  id         String   @id @default(cuid()) @db.VarChar(191)
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String   @db.VarChar(191)
+  item       RouletteItem @relation(fields: [itemId], references: [id])
+  itemId     String   @db.VarChar(191)
+  createdAt  DateTime @default(now())
+}
+
+
+model SpinHistory {
+  id              String   @id @default(cuid()) @db.VarChar(191)
+  userId          String   @db.VarChar(191)
+  user            User     @relation(fields: [userId], references: [id])
+  date            DateTime @default(now())
+  prize           String   @db.VarChar(191)
+  wasSelectedForSuperWheel Boolean @default(false)
+
+  @@index([userId])
+  @@unique([userId, date]) // un seul tirage par jour
+}
+
 
 model PasswordResetToken {
   id        String   @id @default(cuid()) @db.VarChar(191)

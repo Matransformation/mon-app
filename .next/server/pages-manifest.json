@@ -2,10 +2,10 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/training": "pages/training.js",
-  "/api/workouts": "pages/api/workouts.js",
-  "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
   "/api/notifications/unreadCount": "pages/api/notifications/unreadCount.js",
-  "/training/session/[id]": "pages/training/session/[id].js",
-  "/api/workouts/[workoutId]/sessions": "pages/api/workouts/[workoutId]/sessions.js"
+  "/auth/signin": "pages/auth/signin.js",
+  "/roulette": "pages/roulette.js",
+  "/admin/super-roulette": "pages/admin/super-roulette.js",
+  "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
+  "/api/admin/super-draw-entries": "pages/api/admin/super-draw-entries.js"
 }

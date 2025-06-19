@@ -79,6 +79,9 @@ export default function Navbar() {
                 <Link href="/videos" className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 py-1 rounded">
                   Tutoriels vidéos
                 </Link>
+                <Link href="/roulette" className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 py-1 rounded">
+                  Gagne ton cadeau
+                </Link>
               </div>
             )}
           </div>
@@ -168,6 +171,9 @@ export default function Navbar() {
             </Link>
             <Link href="/videos" className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 py-1 rounded">
               Tutoriels vidéos
+            </Link>
+            <Link href="/roulette" className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 py-1 rounded">
+              Gagne ton cadeau
             </Link>
             <Link href="/notifications" className="relative text-gray-700 hover:text-green-700 font-medium">
               Notifications

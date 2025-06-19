@@ -52,6 +52,7 @@ export const authOptions = {
             email: true,
             name: true,
             nom: true,
+            phone: true,                   // ← on ajoute
             stripeStatus: true,
             isSubscribed: true,
             stripePriceId: true,
@@ -66,6 +67,7 @@ export const authOptions = {
         token.email = dbUser.email;
         token.name = dbUser.name;
         token.nom = dbUser.nom;
+        token.phone = dbUser.phone;
         token.stripeStatus = dbUser.stripeStatus;
         token.isSubscribed = dbUser.isSubscribed;
         token.stripePriceId = dbUser.stripePriceId;
@@ -83,6 +85,7 @@ export const authOptions = {
         session.user.id = token.id;
         session.user.name = token.name;
         session.user.nom = token.nom;
+        session.user.phone = token.phone;
         session.user.stripeStatus = token.stripeStatus;
         session.user.isSubscribed = token.isSubscribed;
         session.user.stripePriceId = token.stripePriceId;

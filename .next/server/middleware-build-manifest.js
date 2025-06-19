@@ -20,15 +20,15 @@ globalThis.__BUILD_MANIFEST = {
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/training": [
+    "/admin/super-roulette": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/training.js"
+      "static/chunks/pages/admin/super-roulette.js"
     ],
-    "/training/session/[id]": [
+    "/roulette": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/training/session/[id].js"
+      "static/chunks/pages/roulette.js"
     ]
   },
   "ampFirstPages": []
