@@ -65,7 +65,7 @@ if (selected.couponCode && user.email) {
   
   Félicitations ! Vous avez gagné un coupon de réduction : ${selected.couponCode}
   
-  Rendez-vous sur https://www.matransformation.fr pour l’utiliser.
+  Rendez-vous sur https://www.santegourmet.fr pour l’utiliser.
   
   À bientôt,
   L’équipe Matransformation
@@ -74,7 +74,7 @@ if (selected.couponCode && user.email) {
         <p>Bonjour ${user.name || user.email},</p>
         <p>🎁 Félicitations ! Vous avez gagné un coupon :</p>
         <h2 style="color:#fe8802;">${selected.couponCode}</h2>
-        <p>Rendez-vous sur <a href="https://www.matransformation.fr">matransformation.fr</a> pour l’utiliser.</p>
+        <p>Rendez-vous sur <a href="https://www.santegourmet.fr">santegourmet.fr</a> pour l’utiliser.</p>
         <p>À bientôt,<br/>L’équipe Matransformation</p>
       `,
     }
