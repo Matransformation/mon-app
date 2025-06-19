@@ -1,8 +1,8 @@
 // File: pages/api/admin/super-draw-entries.js
 
 import { getServerSession } from "next-auth/next";
-import { authOptions }      from "../auth/[...nextauth]";
-import prisma               from "../../../lib/prisma";
+import { authOptions } from "../auth/[...nextauth]";
+import prisma from "../../lib/prisma";
 
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);

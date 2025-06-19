@@ -2,10 +2,10 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/api/notifications/unreadCount": "pages/api/notifications/unreadCount.js",
-  "/auth/signin": "pages/auth/signin.js",
   "/roulette": "pages/roulette.js",
+  "/api/notifications/unreadCount": "pages/api/notifications/unreadCount.js",
+  "/api/roulette/lots": "pages/api/roulette/lots.js",
   "/admin/super-roulette": "pages/admin/super-roulette.js",
-  "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
-  "/api/admin/super-draw-entries": "pages/api/admin/super-draw-entries.js"
+  "/api/user/me": "pages/api/user/me.js",
+  "/api/roulette/can-play": "pages/api/roulette/can-play.js"
 }
