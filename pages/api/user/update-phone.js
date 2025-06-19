@@ -1,6 +1,6 @@
 // File: pages/api/user/update-phone.js
 
-import prisma from "../../lib/prisma";
+import prisma from "../../../lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]"; 
 
