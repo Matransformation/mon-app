@@ -1,46 +1,39 @@
-import { FaWhatsapp } from "react-icons/fa"
-import Image from "next/image"
-import { useEffect, useState } from "react"
+import { FaWhatsapp } from "react-icons/fa";
+import Image from "next/image";
+import { useEffect, useState } from "react";
 
 export default function WhatsappButton() {
-  const [visible, setVisible] = useState(false)
-  const [showTooltip, setShowTooltip] = useState(false)
-  const [bottomOffset, setBottomOffset] = useState(20)
+  const [visible, setVisible] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [bottomOffset, setBottomOffset] = useState(20);
 
-  // Manage visibility and tooltip timing
+  // Apparition + tooltip
   useEffect(() => {
-    const timeout = setTimeout(() => setVisible(true), 1000)
-    const tooltipTimeout = setTimeout(() => setShowTooltip(true), 2000)
-    const tooltipHide = setTimeout(() => setShowTooltip(false), 8000)
-
+    const t1 = setTimeout(() => setVisible(true), 1000);
+    const t2 = setTimeout(() => setShowTooltip(true), 2000);
+    const t3 = setTimeout(() => setShowTooltip(false), 8000);
     return () => {
-      clearTimeout(timeout)
-      clearTimeout(tooltipTimeout)
-      clearTimeout(tooltipHide)
-    }
-  }, [])
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, []);
 
-  // Adjust bottom offset based on cookie banner presence
+  // Décaler si bannière cookies
   useEffect(() => {
     const updateOffset = () => {
-      const banner = document.querySelector(".cookie-banner-container")
-      if (banner) {
-        const height = banner.offsetHeight
-        setBottomOffset(height + 20)
-      } else {
-        setBottomOffset(20)
-      }
-    }
-
-    updateOffset()
-    window.addEventListener("resize", updateOffset)
-    const observer = new MutationObserver(updateOffset)
-    observer.observe(document.body, { childList: true, subtree: true })
+      const banner = document.querySelector(".cookie-banner-container");
+      setBottomOffset(banner ? banner.offsetHeight + 20 : 20);
+    };
+    updateOffset();
+    window.addEventListener("resize", updateOffset);
+    const observer = new MutationObserver(updateOffset);
+    observer.observe(document.body, { childList: true, subtree: true });
     return () => {
-      window.removeEventListener("resize", updateOffset)
-      observer.disconnect()
-    }
-  }, [])
+      window.removeEventListener("resize", updateOffset);
+      observer.disconnect();
+    };
+  }, []);
 
   return (
     <>
@@ -48,8 +41,9 @@ export default function WhatsappButton() {
         href="https://wa.me/33658881560?text=Bonjour%20Cl%C3%A9mence%20et%20Romain%2C%20j%27ai%20une%20question%20sur%20votre%20programme"
         target="_blank"
         rel="noopener noreferrer"
-        className={`whatsapp-button ${visible ? "visible" : ""}`}
+        className={`whatsapp-button no-print ${visible ? "visible" : ""}`}
         style={{ bottom: `${bottomOffset}px` }}
+        aria-label="Contacter sur WhatsApp"
       >
         <div className="icon">
           <FaWhatsapp size={22} />
@@ -61,7 +55,7 @@ export default function WhatsappButton() {
       </a>
 
       {showTooltip && (
-        <div className="tooltip-bubble">
+        <div className="tooltip-bubble no-print">
           💬 Une question ? Écris-nous sur WhatsApp !
         </div>
       )}
@@ -85,32 +79,12 @@ export default function WhatsappButton() {
           transform: translateY(20px);
           transition: opacity 0.4s ease, transform 0.4s ease, bottom 0.2s ease;
         }
+        .whatsapp-button.visible { opacity: 1; transform: translateY(0); }
+        .icon { margin-right: 8px; }
+        .text { margin-right: 8px; }
+        .mascotte { border-radius: 50%; overflow: hidden; width: 28px; height: 28px; }
 
-        .whatsapp-button.visible {
-          opacity: 1;
-          transform: translateY(0);
-        }
-
-        .icon {
-          margin-right: 8px;
-        }
-
-        .text {
-          margin-right: 8px;
-        }
-
-        .mascotte {
-          border-radius: 50%;
-          overflow: hidden;
-          width: 28px;
-          height: 28px;
-        }
-
-        @media (max-width: 600px) {
-          .text {
-            display: none;
-          }
-        }
+        @media (max-width: 600px) { .text { display: none; } }
 
         .tooltip-bubble {
           position: fixed;
@@ -127,23 +101,25 @@ export default function WhatsappButton() {
         }
 
         @keyframes fadeInOut {
-          0% {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          10% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-          80% {
-            opacity: 1;
-          }
-          100% {
-            opacity: 0;
-            transform: translateY(10px);
+          0% { opacity: 0; transform: translateY(10px); }
+          10% { opacity: 1; transform: translateY(0); }
+          80% { opacity: 1; }
+          100% { opacity: 0; transform: translateY(10px); }
+        }
+
+        /* Masquer à l'impression (et donc dans ton PDF via window.print) */
+        @media print {
+          .whatsapp-button,
+          .tooltip-bubble,
+          .no-print {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            width: 0 !important;
+            overflow: hidden !important;
           }
         }
       `}</style>
     </>
-  )
+  );
 }

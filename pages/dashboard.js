@@ -1,7 +1,8 @@
 // pages/dashboard.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSession, getSession } from "next-auth/react";
 import dynamic from "next/dynamic";
+import { motion } from "framer-motion";
 import Navbar from "../components/Navbar";
 import Card from "../components/dashboard/Card";
 import UserHeader from "../components/dashboard/UserHeader";
@@ -13,7 +14,6 @@ import MeasurementsForm from "../components/dashboard/MeasurementsForm";
 import prisma from "../lib/prisma";
 import withAuthProtection from "../lib/withAuthProtection";
 
-// Chart.js setup
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -24,46 +24,84 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-const Line = dynamic(() => import("react-chartjs-2").then((mod) => mod.Line), {
-  ssr: false,
-});
+const Line = dynamic(() => import("react-chartjs-2").then((m) => m.Line), { ssr: false });
+const Confetti = dynamic(() => import("react-confetti"), { ssr: false });
 
 function Dashboard({ utilisateur }) {
   const { data: session, status } = useSession();
-
   const [poidsList, setPoidsList] = useState(utilisateur.historiquePoids);
-  const [metabolismeCible, setMetabolismeCible] = useState(utilisateur.metabolismeCible ?? "");
+  const [metabolismeCible, setMetabolismeCible] = useState(
+    utilisateur.metabolismeCible ?? ""
+  );
   const [mensuList, setMensuList] = useState(utilisateur.mensurations);
+  const [showConfetti, setShowConfetti] = useState(false);
 
-  if (status === "loading") return <p>Chargement…</p>;
-  if (!session) return <p>Non autorisé</p>;
+  useEffect(() => {
+    if (mensuList.length > utilisateur.mensurations.length) {
+      setShowConfetti(true);
+      const t = setTimeout(() => setShowConfetti(false), 1800);
+      return () => clearTimeout(t);
+    }
+  }, [mensuList, utilisateur.mensurations.length]);
 
-  const dernierPoids = poidsList.at(-1)?.poids ?? 0;
+  if (status === "loading") return <p className="p-8">Chargement…</p>;
+  if (!session) return <p className="p-8">Non autorisé</p>;
 
+  // Poids le plus récent par date, en ignorant les entrées invalides
+  const dernierPoids = (() => {
+    const valides = (poidsList || []).filter(
+      (e) => e?.date && !isNaN(new Date(e.date)) && Number.isFinite(Number(e?.poids))
+    );
+    if (!valides.length) return 0;
+    const last = [...valides].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+    return Number(last.poids);
+  })();
+
+  const derniereMensuDate = mensuList[0]?.date
+    ? new Date(mensuList[0].date).toLocaleDateString("fr-FR")
+    : "—";
+
+  // Handlers
   const handleAddWeight = async (poids) => {
-    const res = await fetch("/api/utilisateur/poids", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ utilisateurId: session.user.id, poids }),
-    });
-    const data = await res.json();
-    setPoidsList((p) => [...p, data]);
-    return data;
+    const nPoids = Number(poids);
+    if (!Number.isFinite(nPoids) || nPoids <= 0) return;
+
+    // Ajout optimiste
+    const temp = { id: `tmp-${Date.now()}`, poids: nPoids, date: new Date().toISOString() };
+    setPoidsList((p) => [...p, temp]);
+
+    try {
+      const res = await fetch("/api/utilisateur/poids", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ utilisateurId: session.user.id, poids: nPoids }),
+      });
+      const created = await res.json();
+      const safe = {
+        id: created?.id ?? temp.id,
+        poids: Number(created?.poids),
+        date: created?.date ? new Date(created.date).toISOString() : temp.date,
+      };
+      if (!Number.isFinite(safe.poids)) return temp;
+      setPoidsList((p) => p.map((e) => (e.id === temp.id ? safe : e)));
+      return safe;
+    } catch (e) {
+      setPoidsList((p) => p.filter((e) => e.id !== temp.id));
+      throw e;
+    }
   };
 
   const handleDeleteWeight = async (id) => {
-    await fetch(`/api/utilisateur/poids/${id}`, { method: "DELETE" });
+    const backup = poidsList;
     setPoidsList((p) => p.filter((e) => e.id !== id));
+    try {
+      await fetch(`/api/utilisateur/poids/${id}`, { method: "DELETE" });
+    } catch (e) {
+      setPoidsList(backup);
+      console.error(e);
+    }
   };
 
   const handleSaveMetabo = async (formData) => {
@@ -84,82 +122,165 @@ function Dashboard({ utilisateur }) {
       body: JSON.stringify({ utilisateurId: session.user.id, ...data }),
     });
     const { mensurations: created } = await res.json();
-    setMensuList((m) => [created, ...m]);
-    return created;
+    const safe = { ...created, date: new Date(created.date).toISOString() };
+    setMensuList((m) => [safe, ...m]);
+    return safe;
   };
 
   const handleDeleteMensu = async (id) => {
-    await fetch(`/api/utilisateur/mensurations/${id}`, { method: "DELETE" });
+    const backup = mensuList;
     setMensuList((m) => m.filter((e) => e.id !== id));
+    try {
+      await fetch(`/api/utilisateur/mensurations/${id}`, { method: "DELETE" });
+    } catch (e) {
+      setMensuList(backup);
+      console.error(e);
+    }
   };
 
+  // Animations
+  const container = {
+    hidden: { opacity: 0, y: 12 },
+    show: { opacity: 1, y: 0, transition: { staggerChildren: 0.06, duration: 0.35 } },
+  };
+  const item = { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } };
+
   return (
-    <>
+    <div className="relative min-h-screen bg-gradient-to-b from-orange-50/40 via-white to-white">
+      {showConfetti && <Confetti recycle={false} numberOfPieces={150} />}
+
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <UserHeader utilisateur={utilisateur} />
-          </Card>
-
-          <Card>
-            <WeightTracker
-              historiquePoids={poidsList}
-              onAdd={handleAddWeight}
-              onDelete={handleDeleteWeight}
-            />
-          </Card>
-
-          <Card className="md:col-span-2">
-            <MetabolismForm
-              utilisateur={utilisateur}
-              poidsActuel={dernierPoids}
-              metabolismeInit={metabolismeCible}
-              onSave={handleSaveMetabo}
-            />
-          </Card>
-
-          <Card>
-            <h2 className="text-lg font-semibold mb-4">Évolution du poids</h2>
-            <WeightChart historiquePoids={poidsList} ChartComponent={Line} />
-          </Card>
-
-          <Card className="md:col-span-2">
-            <MeasurementsHistory mensurations={mensuList} onDelete={handleDeleteMensu} />
-          </Card>
-
-          <Card className="md:col-span-2">
-            <MeasurementsForm onSave={handleAddMensu} />
-          </Card>
-
-          {/* ✅ Bloc final incitatif */}
-          <div className="md:col-span-2 mt-12 text-center bg-orange-50 border border-orange-200 p-6 rounded-xl shadow-sm">
-            <h3 className="text-xl font-semibold text-orange-600 mb-2">
-              Bravo ! 🎉
-            </h3>
-            <p className="text-gray-700 mb-4">
-              Vous avez ajouté vos informations (Mensurations optionnelles). Vous êtes maintenant prêt·e à découvrir nos :
-            </p>
-
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <a
-                href="/recettes"
-                className="bg-orange-500 text-white font-medium px-6 py-3 rounded-lg hover:bg-orange-600 transition"
-              >
-                Recettes
-              </a>
-              <a
-                href="/menu"
-                className="bg-gray-800 text-white font-medium px-6 py-3 rounded-lg hover:bg-gray-900 transition"
-              >
-                Menu personnalisé
-              </a>
+      <motion.main
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+      >
+        {/* Header de page */}
+        <motion.div variants={item} className="mb-6">
+          <Card variant="glass" className="border-white/50">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
+                  Bonjour, {utilisateur.nom ?? ""} 👋
+                </h1>
+                <p className="text-slate-600 mt-1">
+                  Continue sur ta lancée — mets à jour ton poids et suis tes progrès.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <a
+                  href="/menu"
+                  className="inline-flex items-center rounded-xl bg-orange-500 text-white px-4 py-2 font-semibold hover:brightness-110 transition"
+                >
+                  Menu personnalisé
+                </a>
+                <a
+                  href="/recettes"
+                  className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-4 py-2 font-semibold hover:bg-gray-50 transition"
+                >
+                  Recettes
+                </a>
+              </div>
             </div>
-          </div>
-        </div>
-      </div>
-    </>
+          </Card>
+        </motion.div>
+
+        {/* Stat cards */}
+        <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <Card title="Poids actuel" icon="⚖️" className="bg-white">
+            <p className="text-3xl font-extrabold text-slate-900">{dernierPoids} kg</p>
+          </Card>
+          <Card title="Métabolisme cible" icon="🔥" className="bg-white">
+            <p className="text-3xl font-extrabold text-slate-900">
+              {metabolismeCible ? `${metabolismeCible} kcal/j` : "—"}
+            </p>
+          </Card>
+          <Card title="Dernière mensuration" icon="📏" className="bg-white">
+            <p className="text-3xl font-extrabold text-slate-900">{derniereMensuDate}</p>
+          </Card>
+        </motion.div>
+
+        {/* Grille principale */}
+        <motion.div variants={container} className="grid grid-cols-12 gap-6" initial="hidden" animate="show">
+          {/* Profil (compact) */}
+          <motion.div variants={item} className="col-span-12 lg:col-span-6">
+            <Card title="Profil" icon="👤">
+              <UserHeader utilisateur={utilisateur} variant="compact" />
+            </Card>
+          </motion.div>
+
+          {/* Mise à jour du poids */}
+          <motion.div variants={item} className="col-span-12 lg:col-span-6">
+            <Card title="Mise à jour du poids" icon="➕">
+              <WeightTracker
+                historiquePoids={poidsList}
+                onAdd={handleAddWeight}
+                onDelete={handleDeleteWeight}
+              />
+            </Card>
+          </motion.div>
+
+          {/* Métabolisme */}
+          <motion.div variants={item} className="col-span-12">
+            <Card title="Calcul de ton métabolisme" icon="🧠" variant="subtle">
+              <MetabolismForm
+                utilisateur={utilisateur}
+                poidsActuel={dernierPoids}
+                metabolismeInit={metabolismeCible}
+                onSave={handleSaveMetabo}
+              />
+            </Card>
+          </motion.div>
+
+          {/* Graphique */}
+          <motion.div variants={item} className="col-span-12 lg:col-span-6">
+            <Card title="Évolution du poids" icon="📈">
+              <WeightChart historiquePoids={poidsList} ChartComponent={Line} />
+            </Card>
+          </motion.div>
+
+          {/* Historique mensurations */}
+          <motion.div variants={item} className="col-span-12 lg:col-span-6">
+            <Card title="Historique mensurations" icon="🗂️">
+              <MeasurementsHistory mensurations={mensuList} onDelete={handleDeleteMensu} />
+            </Card>
+          </motion.div>
+
+          {/* Ajouter mensuration */}
+          <motion.div variants={item} className="col-span-12">
+            <Card title="Ajouter une mensuration" icon="✍️">
+              <MeasurementsForm onSave={handleAddMensu} />
+            </Card>
+          </motion.div>
+
+          {/* CTA */}
+          <motion.div variants={item} className="col-span-12">
+            <div className="rounded-2xl bg-orange-50 border border-orange-200 p-6 text-center shadow-sm">
+              <h3 className="text-xl font-semibold text-orange-600 mb-2">Bravo ! 🎉</h3>
+              <p className="text-gray-700 mb-4">
+                Vous avez ajouté vos informations. Découvrez maintenant :
+              </p>
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                <a
+                  href="/recettes"
+                  className="bg-orange-500 text-white font-medium px-6 py-3 rounded-lg hover:bg-orange-600 transition inline-block"
+                >
+                  🎂 Recettes
+                </a>
+                <a
+                  href="/menu"
+                  className="bg-gray-900 text-white font-medium px-6 py-3 rounded-lg hover:bg-black transition inline-block"
+                >
+                  🍽️ Menu personnalisé
+                </a>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      </motion.main>
+    </div>
   );
 }
 
@@ -171,7 +292,6 @@ export async function getServerSideProps(context) {
     where: { email: session.user.email },
     include: { historiquePoids: true, mensurations: true },
   });
-
   if (!raw) return { notFound: true };
 
   const utilisateur = {
@@ -184,23 +304,25 @@ export async function getServerSideProps(context) {
     metabolismeCible: raw.metabolismeCible,
     sexe: raw.sexe,
     activite: raw.activite,
-    objectif: raw.objectif || "perte", // 👈 AJOUTE CETTE LIGNE
+    objectif: raw.objectif || "perte",
     historiquePoids: raw.historiquePoids.map((h) => ({
       id: h.id,
       poids: h.poids,
       date: h.date.toISOString(),
     })),
-    mensurations: raw.mensurations.map((m) => ({
-      id: m.id,
-      date: m.date.toISOString(),
-      taille: m.taille,
-      hanches: m.hanches,
-      cuisses: m.cuisses,
-      bras: m.bras,
-      poitrine: m.poitrine,
-      mollets: m.mollets,
-      masseGrasse: m.masseGrasse,
-    })),
+    mensurations: raw.mensurations
+      .sort((a, b) => b.date - a.date)
+      .map((m) => ({
+        id: m.id,
+        date: m.date.toISOString(),
+        taille: m.taille,
+        hanches: m.hanches,
+        cuisses: m.cuisses,
+        bras: m.bras,
+        poitrine: m.poitrine,
+        mollets: m.mollets,
+        masseGrasse: m.masseGrasse,
+      })),
   };
 
   return { props: { utilisateur } };

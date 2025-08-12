@@ -7,6 +7,8 @@ import CookieBanner from "../components/CookieBanner"
 import WhatsappButton from "../components/WhatsappButton"
 import { useEffect, useState } from "react"
 import { Cookies } from "react-cookie-consent"
+import "../styles/print.css";
+
 
 export default function App({ Component, pageProps }) {
   const [hasConsent, setHasConsent] = useState(false)

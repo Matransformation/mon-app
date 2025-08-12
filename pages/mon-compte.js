@@ -1,32 +1,39 @@
 // pages/mon-compte.js
 import { getSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Navbar from "../components/Navbar";
 import prisma from "../lib/prisma";
 
 export default function MonCompte({ user }) {
+  // ----- State
   const [email, setEmail] = useState("");
   const [prenom, setPrenom] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmMessage, setConfirmMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [cancelBusy, setCancelBusy] = useState(false);
+
+  // Abonnement
   const [trialEndsAt, setTrialEndsAt] = useState(null);
   const [renewalDate, setRenewalDate] = useState(null);
   const [subscriptionType, setSubscriptionType] = useState("");
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [stripeStatus, setStripeStatus] = useState("");
   const [cancelAtPeriodEnd, setCancelAtPeriodEnd] = useState(user.cancelAtPeriodEnd || false);
-  
+
+  // ----- Init depuis SSR
   useEffect(() => {
     if (!user) return;
-    setEmail(user.email);
+    setEmail(user.email || "");
     setPrenom(user.nom || user.name || "");
     setTrialEndsAt(user.trialEndsAt);
     setRenewalDate(user.subscriptionEnd);
-    setIsSubscribed(user.isSubscribed);
-    setStripeStatus(user.stripeStatus);
-    setCancelAtPeriodEnd(user.cancelAtPeriodEnd);
+    setIsSubscribed(!!user.isSubscribed);
+    setStripeStatus(user.stripeStatus || "");
 
-    // Libellé de l'abonnement
+    setCancelAtPeriodEnd(Boolean(user.cancelAtPeriodEnd));
+
+    // Libellé abonnement depuis les prix publics
     const { stripePriceId } = user;
     if (stripePriceId === process.env.NEXT_PUBLIC_PRICE_MONTHLY) {
       setSubscriptionType("Abonnement Mensuel");
@@ -39,6 +46,7 @@ export default function MonCompte({ user }) {
     }
   }, [user]);
 
+  // ----- Helpers
   const formatDate = (iso) =>
     iso
       ? new Date(iso).toLocaleDateString("fr-FR", {
@@ -48,222 +56,345 @@ export default function MonCompte({ user }) {
         })
       : "—";
 
-      const now = Date.now();
-      const trialActive = trialEndsAt && new Date(trialEndsAt) > now;
-      
-      const cancelPending =
-        cancelAtPeriodEnd &&
-        renewalDate &&
-        new Date(renewalDate) > now;
-      
-      const subscriptionActive =
-        isSubscribed &&
-        stripeStatus === "active" &&
-        !cancelAtPeriodEnd &&
-        renewalDate &&
-        new Date(renewalDate) > now;
-      
+  const nowTs = useMemo(() => Date.now(), []);
+  const trialActive = trialEndsAt ? new Date(trialEndsAt).getTime() > nowTs : false;
+  const renewalTs = renewalDate ? new Date(renewalDate).getTime() : 0;
 
+  const cancelPending = cancelAtPeriodEnd && renewalTs > nowTs;
+  const subscriptionActive =
+    isSubscribed && stripeStatus === "active" && !cancelAtPeriodEnd && renewalTs > nowTs;
+
+  // ----- Actions
   const handleUpdateUser = async (e) => {
     e.preventDefault();
-    const res = await fetch("/api/utilisateur/update", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: user.id, email, nom: prenom }),
-    });
-    setConfirmMessage(res.ok ? "✅ Infos mises à jour !" : "❌ Erreur.");
-    setTimeout(() => setConfirmMessage(""), 3000);
+    setBusy(true);
+    try {
+      const res = await fetch("/api/utilisateur/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: user.id, email, nom: prenom }),
+      });
+      setConfirmMessage(res.ok ? "✅ Infos mises à jour !" : "❌ Erreur lors de la mise à jour.");
+    } catch {
+      setConfirmMessage("❌ Erreur réseau.");
+    } finally {
+      setBusy(false);
+      setTimeout(() => setConfirmMessage(""), 3500);
+    }
   };
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
     if (!newPassword) return;
-    const res = await fetch("/api/utilisateur/password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ utilisateurId: user.id, newPassword }),
-    });
-    setConfirmMessage(res.ok ? "✅ Mot de passe mis à jour !" : "❌ Erreur.");
-    setNewPassword("");
-    setTimeout(() => setConfirmMessage(""), 3000);
+    setBusy(true);
+    try {
+      const res = await fetch("/api/utilisateur/password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ utilisateurId: user.id, newPassword }),
+      });
+      setConfirmMessage(res.ok ? "✅ Mot de passe mis à jour !" : "❌ Erreur lors de la mise à jour.");
+      if (res.ok) setNewPassword("");
+    } catch {
+      setConfirmMessage("❌ Erreur réseau.");
+    } finally {
+      setBusy(false);
+      setTimeout(() => setConfirmMessage(""), 3500);
+    }
   };
 
   const handleSubscribe = async (priceKey) => {
-    const res = await fetch("/api/subscribe", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ priceId: priceKey }),
-    });
-    const data = await res.json();
-    if (data.sessionUrl) window.location.href = data.sessionUrl;
-    else alert("Erreur lors de l'abonnement, réessaie.");
+    setBusy(true);
+    try {
+      const res = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priceId: priceKey }),
+      });
+      const data = await res.json();
+      if (data.sessionUrl) window.location.href = data.sessionUrl;
+      else setConfirmMessage("❌ Erreur lors de l’abonnement, réessaie.");
+    } catch {
+      setConfirmMessage("❌ Erreur réseau.");
+    } finally {
+      setBusy(false);
+      setTimeout(() => setConfirmMessage(""), 3500);
+    }
   };
 
   const handleCancelRenewal = async () => {
-    const res = await fetch("/api/subscription/cancel", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: user.id }),
-    });
-    const json = await res.json();
-    if (res.ok) {
-      setConfirmMessage(`✅ ${json.message}`);
-      setStripeStatus("canceled");
-      setCancelAtPeriodEnd(true); // 👈 ajoute ceci
-    } else {
-      setConfirmMessage("❌ Erreur lors de l’annulation.");
+    setCancelBusy(true);
+    try {
+      const res = await fetch("/api/subscription/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id }),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        setConfirmMessage(`✅ ${json.message}`);
+        setStripeStatus("canceled");
+        setCancelAtPeriodEnd(true);
+      } else {
+        setConfirmMessage("❌ Erreur lors de l’annulation.");
+      }
+    } catch {
+      setConfirmMessage("❌ Erreur réseau.");
+    } finally {
+      setCancelBusy(false);
+      setTimeout(() => setConfirmMessage(""), 5000);
     }
-    setTimeout(() => setConfirmMessage(""), 5000);
   };
 
   return (
     <>
       <Navbar />
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
-        <h1 className="text-3xl font-bold mb-8">Mon compte</h1>
 
-        {/* Infos personnelles */}
-        <form
-          onSubmit={handleUpdateUser}
-          className="bg-white shadow rounded-lg p-6 mb-6 grid gap-4"
-        >
-          <h2 className="text-xl font-semibold border-b pb-2">
-            Infos personnelles
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input
-              type="text"
-              value={prenom}
-              onChange={(e) => setPrenom(e.target.value)}
-              className="border rounded p-2"
-              placeholder="Prénom"
-            />
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="border rounded p-2"
-              placeholder="Email"
-            />
-          </div>
-          <button
-            type="submit"
-            className="self-end bg-green-600 text-white px-6 py-2 rounded"
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-extrabold text-gray-900">Mon compte</h1>
+          <p className="text-gray-600 mt-1">
+            Gérez vos informations, votre mot de passe et votre abonnement.
+          </p>
+        </div>
+
+        {/* Alertes statut */}
+        {confirmMessage && (
+          <div
+            role="status"
+            className={`mb-6 rounded-xl border px-4 py-3 ${
+              confirmMessage.startsWith("✅")
+                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                : "border-red-200 bg-red-50 text-red-800"
+            }`}
           >
-            Sauvegarder
-          </button>
-          {confirmMessage && <p className="text-green-600">{confirmMessage}</p>}
-        </form>
-
-        {/* Offres d’abonnement */}
-        {!subscriptionActive && !cancelPending && (
-          <>
-            <div className="bg-white shadow rounded-lg p-6 mb-6">
-              <h2 className="text-lg font-semibold">Mensuel (€14,99/mois)</h2>
-              <p className="text-sm text-gray-700 mb-4">
-                Accès complet, sans engagement.
-              </p>
-              <button
-                onClick={() => handleSubscribe("price_monthly")}
-                className="bg-orange-500 text-white px-4 py-2 rounded"
-              >
-                S’abonner
-              </button>
-            </div>
-            <div className="bg-white shadow rounded-lg p-6 mb-6">
-              <h2 className="text-lg font-semibold">Annuel (€89,90/an)</h2>
-              <p className="text-sm text-gray-700 mb-4">
-                Économisez 50%, sans engagement.
-              </p>
-              <button
-                onClick={() => handleSubscribe("price_annual")}
-                className="bg-orange-500 text-white px-4 py-2 rounded"
-              >
-                S’abonner
-              </button>
-            </div>
-            <div className="bg-white shadow rounded-lg p-6 mb-6">
-              <h2 className="text-lg font-semibold">Recettes (€3,99/mois)</h2>
-              <p className="text-sm text-gray-700 mb-4">
-                Accès uniquement aux recettes.
-              </p>
-              <button
-                onClick={() => handleSubscribe("price_recipes")}
-                className="bg-orange-500 text-white px-4 py-2 rounded"
-              >
-                S’abonner
-              </button>
-            </div>
-          </>
+            {confirmMessage}
+          </div>
         )}
 
-        {/* Période d’essai */}
         {trialActive && !subscriptionActive && !cancelPending && (
-          <div className="bg-white shadow rounded-lg p-6 mb-6">
-            <h2 className="text-lg font-semibold">Période d'essai</h2>
-            <p>
-              Fin de l’essai : <strong>{formatDate(trialEndsAt)}</strong>
-            </p>
+          <div className="mb-6 rounded-xl border border-orange-200 bg-orange-50 text-orange-800 px-4 py-3">
+            🎁 Période d’essai en cours — se termine le{" "}
+            <strong>{formatDate(trialEndsAt)}</strong>.
           </div>
         )}
 
-        {/* Abonnement actif */}
         {subscriptionActive && (
-          <div className="bg-white shadow rounded-lg p-6 mb-6">
-            <h2 className="text-lg font-semibold">Votre abonnement</h2>
-            <p>
-              Type : <strong>{subscriptionType}</strong>
-            </p>
-            <p>
-              Prochain renouvellement :{" "}
-              <strong>{formatDate(renewalDate)}</strong>
-            </p>
-            <button
-              onClick={handleCancelRenewal}
-              className="mt-4 bg-red-500 text-white px-6 py-2 rounded"
-            >
-              Annuler le renouvellement
-            </button>
+          <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 px-4 py-3">
+            ✅ Abonnement actif — prochain renouvellement le{" "}
+            <strong>{formatDate(renewalDate)}</strong>.
           </div>
         )}
 
-        {/* Annulation en cours */}
         {cancelPending && (
-          <div className="bg-white shadow rounded-lg p-6 mb-6">
-            <h2 className="text-lg font-semibold text-red-600">
-              Abonnement annulé
-            </h2>
-            <p>
-              Vous gardez l’accès jusqu’au{" "}
-              <strong>{formatDate(renewalDate)}</strong>.
-            </p>
+          <div className="mb-6 rounded-xl border border-rose-200 bg-rose-50 text-rose-800 px-4 py-3">
+            ⏳ Résiliation programmée — accès jusqu’au{" "}
+            <strong>{formatDate(renewalDate)}</strong>.
           </div>
         )}
 
-        {/* Changer mot de passe */}
-        <form
-          onSubmit={handleChangePassword}
-          className="bg-white shadow rounded-lg p-6 grid gap-4"
-        >
-          <h3 className="text-lg font-semibold border-b pb-2">
-            🔐 Changer le mot de passe
-          </h3>
-          <input
-            type="password"
-            placeholder="Nouveau mot de passe"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            className="border rounded p-2"
-          />
-          <button
-            type="submit"
-            className="self-end bg-blue-600 text-white px-6 py-2 rounded"
-          >
-            Mettre à jour
-          </button>
-        </form>
+        {/* Grille 2 colonnes */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Colonne gauche : Infos + Password */}
+          <div className="space-y-6 lg:col-span-2">
+            {/* Infos personnelles */}
+            <form
+              onSubmit={handleUpdateUser}
+              className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-6"
+            >
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Infos personnelles</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label className="flex flex-col">
+                  <span className="text-sm font-medium text-gray-700 mb-1">Prénom</span>
+                  <input
+                    type="text"
+                    value={prenom}
+                    onChange={(e) => setPrenom(e.target.value)}
+                    className="rounded-md border border-gray-300 p-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+                    placeholder="Prénom"
+                  />
+                </label>
+                <label className="flex flex-col">
+                  <span className="text-sm font-medium text-gray-700 mb-1">Email</span>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="rounded-md border border-gray-300 p-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+                    placeholder="Email"
+                  />
+                </label>
+              </div>
+              <div className="mt-4 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="inline-flex items-center justify-center bg-gray-900 text-white px-5 py-2 rounded-lg hover:bg-gray-800 transition disabled:opacity-60"
+                >
+                  {busy ? "Enregistrement…" : "Sauvegarder"}
+                </button>
+              </div>
+            </form>
+
+            {/* Mot de passe */}
+            <form
+              onSubmit={handleChangePassword}
+              className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-6"
+            >
+              <h3 className="text-xl font-bold text-gray-900 mb-4">🔐 Changer le mot de passe</h3>
+              <label className="flex flex-col">
+                <span className="text-sm font-medium text-gray-700 mb-1">Nouveau mot de passe</span>
+                <input
+                  type="password"
+                  placeholder="********"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="rounded-md border border-gray-300 p-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+                />
+              </label>
+              <div className="mt-4 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={busy || !newPassword}
+                  className="inline-flex items-center justify-center bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-60"
+                >
+                  {busy ? "Mise à jour…" : "Mettre à jour"}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Colonne droite : Abonnement */}
+          <div className="space-y-6">
+            {/* Carte statut abonnement */}
+            <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-3">Votre abonnement</h2>
+
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <span className="px-2.5 py-1 rounded-full text-sm bg-gray-100 text-gray-800">
+                  {subscriptionType}
+                </span>
+                <span
+                  className={`px-2.5 py-1 rounded-full text-sm ${
+                    subscriptionActive
+                      ? "bg-emerald-100 text-emerald-800"
+                      : cancelPending
+                      ? "bg-rose-100 text-rose-800"
+                      : "bg-gray-100 text-gray-700"
+                  }`}
+                >
+                  {subscriptionActive
+                    ? "Actif"
+                    : cancelPending
+                    ? "Résiliation en cours"
+                    : "Inactif"}
+                </span>
+                {trialActive && (
+                  <span className="px-2.5 py-1 rounded-full text-sm bg-orange-100 text-orange-800">
+                    Essai jusqu’au {formatDate(trialEndsAt)}
+                  </span>
+                )}
+              </div>
+
+              <dl className="text-sm text-gray-700 space-y-1">
+                <div className="flex justify-between">
+                  <dt>Statut Stripe</dt>
+                  <dd className="font-medium">{stripeStatus || "—"}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt>Prochain renouvellement</dt>
+                  <dd className="font-medium">{formatDate(renewalDate)}</dd>
+                </div>
+              </dl>
+
+              {/* Actions abonnement */}
+              <div className="mt-4 space-y-2">
+                {subscriptionActive ? (
+                  <button
+                    onClick={handleCancelRenewal}
+                    disabled={cancelBusy}
+                    className="w-full inline-flex items-center justify-center bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition disabled:opacity-60"
+                  >
+                    {cancelBusy ? "Annulation…" : "Annuler le renouvellement"}
+                  </button>
+                ) : cancelPending ? (
+                  <p className="text-sm text-gray-600">
+                    Vous gardez l’accès jusqu’au <strong>{formatDate(renewalDate)}</strong>.
+                  </p>
+                ) : (
+                  <p className="text-sm text-gray-600">
+                    Choisissez une offre ci-dessous pour activer votre accès.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Offres (affichées uniquement si non actif et pas de résiliation en cours) */}
+            {!subscriptionActive && !cancelPending && (
+              <div className="space-y-4">
+                <OfferCard
+                  title="Mensuel"
+                  price="14,99 € / mois"
+                  desc="Accès complet, sans engagement."
+                  onClick={() => handleSubscribe("price_monthly")}
+                  busy={busy}
+                />
+                <OfferCard
+                  title="Annuel"
+                  price="89,90 € / an"
+                  desc="Accédez à tout et économisez ~50%."
+                  onClick={() => handleSubscribe("price_annual")}
+                  busy={busy}
+                  highlight
+                />
+                <OfferCard
+                  title="Recettes"
+                  price="3,99 € / mois"
+                  desc="Accès uniquement aux recettes."
+                  onClick={() => handleSubscribe("price_recipes")}
+                  busy={busy}
+                />
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </>
+  );
+}
+
+// Petite carte réutilisable pour les offres
+function OfferCard({ title, price, desc, onClick, busy, highlight = false }) {
+  return (
+    <div
+      className={`rounded-2xl shadow-sm ring-1 p-5 ${
+        highlight
+          ? "bg-orange-50 ring-orange-200"
+          : "bg-white ring-gray-100"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-lg font-bold text-gray-900">{title}</h3>
+          <p className="text-sm text-gray-600 mt-1">{desc}</p>
+        </div>
+        <div className="text-right">
+          <div className="text-xl font-extrabold text-gray-900">{price}</div>
+        </div>
+      </div>
+      <button
+        onClick={onClick}
+        disabled={busy}
+        className={`mt-4 w-full inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition disabled:opacity-60 ${
+          highlight
+            ? "bg-orange-500 hover:bg-orange-600 text-white"
+            : "bg-gray-900 hover:bg-gray-800 text-white"
+        }`}
+      >
+        {busy ? "Redirection…" : "S’abonner"}
+      </button>
+    </div>
   );
 }
 
@@ -287,9 +418,8 @@ export async function getServerSideProps(context) {
       stripePriceId: true,
       stripeStatus: true,
       isSubscribed: true,
-      cancelAtPeriodEnd: true, // 👈 C'EST LUI
+      cancelAtPeriodEnd: true,
     },
-    
   });
 
   return {
@@ -299,7 +429,6 @@ export async function getServerSideProps(context) {
         trialEndsAt: u.trialEndsAt?.toISOString() ?? null,
         subscriptionEnd: u.subscriptionEnd?.toISOString() ?? null,
         cancelAtPeriodEnd: u.cancelAtPeriodEnd ?? false,
-
       },
     },
   };

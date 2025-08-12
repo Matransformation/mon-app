@@ -23,15 +23,15 @@
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/admin/super-roulette": [
+    "/auth/signin": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/admin/super-roulette.js"
+      "static/chunks/pages/auth/signin.js"
     ],
-    "/roulette": [
+    "/mon-compte": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/roulette.js"
+      "static/chunks/pages/mon-compte.js"
     ]
   },
   "ampFirstPages": []

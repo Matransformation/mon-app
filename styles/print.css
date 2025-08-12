@@ -1,0 +1,68 @@
+/* styles/print.css */
+
+/* Tout ce qui ne doit JAMAIS sortir en PDF/print */
+@media print {
+    /* En-têtes / navigations / sticky bars / footers */
+    nav,
+    header,
+    footer,
+    .site-header,
+    .site-footer,
+    .sticky,
+    .no-print {
+      display: none !important;
+    }
+  
+    /* Hero image, car on ne veut pas l’image plein écran à l’impression */
+    .recipe-hero {
+      display: none !important;
+    }
+  
+    /* Widgets fréquents */
+    #wh-widget-send-button,
+    .wh-widget-send-button,
+    .wa-widget,
+    .wa__btn_popup,
+    .wa__popup_chat_box,
+    .grecaptcha-badge,
+    .Toastify,
+    .chat-widget,
+    iframe[src*="recaptcha"],
+    iframe[src*="wa.me"],
+    iframe {
+      display: none !important;
+      visibility: hidden !important;
+      height: 0 !important;
+      width: 0 !important;
+      overflow: hidden !important;
+    }
+  
+    /* Supprimer les URL après les liens */
+    a[href]:after {
+      content: "" !important;
+    }
+  
+    /* Couleurs fidèles */
+    body {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      background: #fff !important;
+    }
+  
+    /* Taille de page et marges */
+    @page {
+      size: A4 portrait;
+      margin: 10mm;
+    }
+  
+    /* Les blocs marqués pour impression uniquement */
+    .print-only {
+      display: block !important;
+    }
+  }
+  
+  /* Par défaut à l'écran : masquer ce qui est réservé à l’impression */
+  .print-only {
+    display: none;
+  }
+  

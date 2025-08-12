@@ -1,8 +1,1 @@
-{
-  "components/roulette/LuckyWheel.jsx -> react-custom-roulette": {
-    "id": "components/roulette/LuckyWheel.jsx -> react-custom-roulette",
-    "files": [
-      "static/chunks/_pages-dir-browser_node_modules_react-custom-roulette_dist_bundle_js.js"
-    ]
-  }
-}
+{}

@@ -2,10 +2,9 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/roulette": "pages/roulette.js",
   "/api/notifications/unreadCount": "pages/api/notifications/unreadCount.js",
-  "/api/roulette/lots": "pages/api/roulette/lots.js",
-  "/admin/super-roulette": "pages/admin/super-roulette.js",
-  "/api/user/me": "pages/api/user/me.js",
-  "/api/roulette/can-play": "pages/api/roulette/can-play.js"
+  "/dashboard": "pages/dashboard.js",
+  "/mon-compte": "pages/mon-compte.js",
+  "/auth/signin": "pages/auth/signin.js",
+  "/": "pages/index.js"
 }
