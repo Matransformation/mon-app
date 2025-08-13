@@ -2,9 +2,8 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/api/notifications/unreadCount": "pages/api/notifications/unreadCount.js",
-  "/dashboard": "pages/dashboard.js",
-  "/mon-compte": "pages/mon-compte.js",
-  "/auth/signin": "pages/auth/signin.js",
+  "/register": "pages/register.js",
+  "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
+  "/login": "pages/login.js",
   "/": "pages/index.js"
 }

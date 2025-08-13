@@ -1,0 +1,133 @@
+// pages/index.js
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import prisma from "../lib/prisma";
+
+// Sections
+import Hero from "../components/home/Hero";
+import StatsStrip from "../components/home/StatsStrip";
+import Features from "../components/home/Features";
+import HowItWorks from "../components/home/HowItWorks";
+import ProductApp from "../components/home/ProductApp";
+import Testimonials from "../components/home/Testimonials";
+import FAQ from "../components/home/FAQ";
+import CTA from "../components/home/CTA";
+import StickyCTA from "../components/home/StickyCTA";
+
+export async function getServerSideProps() {
+  const usersCount = await prisma.user.count();
+  return { props: { usersCount } };
+}
+
+export default function Home({ usersCount }) {
+  const features = [
+    {
+      img: "https://res.cloudinary.com/diccvjf98/image/upload/v1749906494/1_zddqro.png",
+      title: "Recettes simples et équilibrées",
+      desc: "Des idées de repas sains, adaptées à tes objectifs.",
+    },
+    {
+      img: "https://res.cloudinary.com/diccvjf98/image/upload/v1749906494/3_ontjyy.png",
+      title: "Menus personnalisés",
+      desc: "Plans alimentaires sur-mesure selon ton métabolisme.",
+    },
+    {
+      img: "https://res.cloudinary.com/diccvjf98/image/upload/v1749906494/2_u7shls.png",
+      title: "Suivi de progression",
+      desc: "Poids, mensurations, objectifs—tout au même endroit.",
+    },
+  ];
+
+  const faqs = [
+    {
+      question: "Comment fonctionne l’essai gratuit ?",
+      answer:
+        "Crée ton compte et profite de toutes les fonctionnalités pendant 7 jours, sans engagement.",
+    },
+    {
+      question: "À qui s’adresse MaTransformation ?",
+      answer:
+        "À toute personne souhaitant perdre du poids, mieux manger, ou se remettre en forme durablement.",
+    },
+    {
+      question: "Puis-je adapter mes repas selon mes goûts ?",
+      answer:
+        "Oui, modifie accompagnements et quantités selon tes préférences.",
+    },
+    {
+      question: "Sport obligatoire ?",
+      answer:
+        "Non, commence par l’alimentation. L’activité physique reste un plus.",
+    },
+  ];
+
+  return (
+    <div className="flex flex-col min-h-screen text-gray-900">
+      <Header />
+      <main className="flex-1">
+        <Hero
+          kicker="La nutrition, sans prise de tête"
+          title={<>Perdre du poids n’a jamais été aussi simple.</>}
+          subtitle="Des menus adaptés à ton corps, des recettes gourmandes et un vrai suivi au quotidien."
+          ctaText="Essayer 7 jours gratuitement"
+          ctaHref="/register"
+          mobileImage="https://res.cloudinary.com/diccvjf98/image/upload/v1749826619/Design_sans_titre_46_kbofuh.png"
+          desktopImage="https://res.cloudinary.com/diccvjf98/image/upload/v1749824311/Design_sans_titre_44_bcwldm.png"
+          sideImage="https://res.cloudinary.com/diccvjf98/image/upload/v1749906494/3_ontjyy.png"
+        />
+
+        <StatsStrip usersCount={usersCount} rating={4.9} reviews={97} />
+
+        <HowItWorks />
+
+        <Features features={features} />
+
+        <ProductApp
+          imageLeft="https://res.cloudinary.com/diccvjf98/image/upload/v1749906494/1_zddqro.png"
+          imageRight="https://res.cloudinary.com/diccvjf98/image/upload/v1749906494/2_u7shls.png"
+        />
+
+        <Testimonials
+          items={[
+            {
+              text:
+                "J’ai perdu 6 kg sans frustration. Les menus sont clairs et l’app me motive.",
+              author: "Nathalie, 48 ans",
+            },
+            {
+              text:
+                "Je me sens mieux et j’adore le suivi personnalisé. Enfin une méthode simple !",
+              author: "Julie, 42 ans",
+            },
+          ]}
+        />
+
+        <FAQ
+          title={
+            <>
+              On répond à tes <span className="text-orange-600">questions fréquentes</span>.
+            </>
+          }
+          faqs={faqs}
+          contact={{
+            email: "contact@matransformation.fr",
+            ctaHref: "/register",
+            ctaText: "Commencer l’essai gratuit",
+          }}
+        />
+
+        <CTA
+          title="Prête à démarrer ta transformation ?"
+          subtitle="Rejoins des milliers de membres qui mangent mieux sans frustration."
+          ctaHref="/register"
+          ctaText="Je commence mon essai gratuit"
+        />
+      </main>
+
+      {/* CTA collant mobile */}
+      <StickyCTA label="Essai gratuit 7 jours" href="/register" />
+
+      <Footer />
+    </div>
+  );
+}
