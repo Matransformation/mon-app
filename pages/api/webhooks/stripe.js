@@ -9,14 +9,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2022-08-01",
 });
 
-// ---- Helpers ----
-function computeAccessFlags(sub) {
-  // statuses: 'trialing' | 'active' | 'past_due' | 'canceled' | 'unpaid' ...
-  const status = sub.status;
-  // On considère l'accès OK uniquement en 'active' ou 'trialing'
-  const isSubscribed = status === "active" || status === "trialing";
-  return { stripeStatus: status, isSubscribed };
-}
+/* ---------------- Helpers ---------------- */
 
 function computeLabels(priceId) {
   let subscriptionType = "recette";
@@ -31,121 +24,270 @@ function computeLabels(priceId) {
   return { subscriptionType, hasFull };
 }
 
-async function majUtilisateurDepuisSub(sub, metadataUserId) {
-  const custId   = sub.customer?.toString();
-  const priceId  = sub.items?.data?.[0]?.price?.id || null;
+async function resolveUser({ metadataUserId, stripeCustomerId, customerEmail }) {
+  if (metadataUserId) {
+    const u = await prisma.user.findUnique({ where: { id: metadataUserId } });
+    if (u) return u;
+  }
+  if (stripeCustomerId) {
+    const u = await prisma.user.findUnique({ where: { stripeCustomerId } });
+    if (u) return u;
+  }
+  if (customerEmail) {
+    const u = await prisma.user.findUnique({ where: { email: customerEmail } });
+    if (u) return u;
+  }
+  return null;
+}
+
+async function majUtilisateurDepuisSub(sub, hints = {}) {
+  const custId    = sub.customer?.toString() || null;
+  const priceId   = sub.items?.data?.[0]?.price?.id || null;
   const periodEnd = sub.current_period_end ? new Date(sub.current_period_end * 1000) : null;
 
-  const where = metadataUserId ? { id: metadataUserId } : { stripeCustomerId: custId };
-  const { stripeStatus, isSubscribed } = computeAccessFlags(sub);
+  // récup email client pour fallback
+  let customerEmail = null;
+  try {
+    if (custId) {
+      const customer = await stripe.customers.retrieve(custId);
+      // @ts-ignore
+      customerEmail = customer?.email || null;
+      // @ts-ignore
+      if (!hints.metadataUserId && customer?.metadata?.userId) {
+        hints.metadataUserId = customer.metadata.userId;
+      }
+    }
+  } catch (e) {
+    console.warn("⚠️ retrieve customer:", e?.message);
+  }
+
+  const user = await resolveUser({
+    metadataUserId: hints.metadataUserId,
+    stripeCustomerId: custId,
+    customerEmail,
+  });
+  if (!user) {
+    console.error("❌ Aucun utilisateur trouvé", { custId, customerEmail, hints });
+    return;
+  }
+
   const { subscriptionType, hasFull } = computeLabels(priceId);
 
   await prisma.user.update({
-    where,
+    where: { id: user.id },
     data: {
       stripeCustomerId: custId,
       stripeSubscriptionId: sub.id,
       stripePriceId: priceId,
-      stripeStatus,
+      stripeStatus: sub.status, // info brute
       stripeCurrentPeriodEnd: periodEnd,
       subscriptionEnd: periodEnd,
       cancelAtPeriodEnd: !!sub.cancel_at_period_end,
       trialEndsAt: sub.trial_end ? new Date(sub.trial_end * 1000) : null,
       subscriptionType,
-      isSubscribed,
-      hasAccessToFullContent: isSubscribed && hasFull, // utilisé par getAccessRights
+      // on ne touche pas ici isSubscribed/hasAccess: on le fera selon le type d’event
     },
   });
-  console.log(`✅ User ${metadataUserId || custId} maj depuis sub ${sub.id} (status=${stripeStatus})`);
 }
+
+/* ---------------- Webhook ---------------- */
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end("Méthode non autorisée");
 
   let event;
   const sig = req.headers["stripe-signature"];
-
   try {
     const buf = await buffer(req);
     event = stripe.webhooks.constructEvent(buf, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
-    console.error("❌ Échec vérif. signature :", err.message);
+    console.error("❌ Signature invalide:", err.message);
     return res.status(400).end(`Webhook Error: ${err.message}`);
   }
 
   try {
     switch (event.type) {
-      // ✅ Paiement réussi (renouvellement OK ou première facture)
+      /* ✅ Paiement réussi → on ACTIVE coûte que coûte */
       case "invoice.payment_succeeded": {
         const invoice = event.data.object;
-        if (invoice.subscription) {
-          const sub = await stripe.subscriptions.retrieve(invoice.subscription, {
-            expand: ["items.data.price"],
+        if (!invoice.subscription) break;
+
+        const sub = await stripe.subscriptions.retrieve(invoice.subscription, {
+          expand: ["items.data.price"],
+        });
+
+        await majUtilisateurDepuisSub(sub, { metadataUserId: invoice?.metadata?.userId });
+
+        // calcule flags et force ACTIVE
+        const custId    = sub.customer?.toString() || null;
+        const priceId   = sub.items?.data?.[0]?.price?.id || null;
+        const periodEnd = sub.current_period_end ? new Date(sub.current_period_end * 1000) : null;
+        const { hasFull } = computeLabels(priceId);
+
+        // retrouve user pour update final
+        let email = null;
+        try {
+          if (custId) {
+            const c = await stripe.customers.retrieve(custId);
+            // @ts-ignore
+            email = c?.email || null;
+          }
+        } catch {}
+
+        const user = await resolveUser({
+          metadataUserId: invoice?.metadata?.userId,
+          stripeCustomerId: custId,
+          customerEmail: email,
+        });
+        if (user) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              stripeStatus: "active",          // ✅ on force
+              isSubscribed: true,               // ✅ on force
+              hasAccessToFullContent: hasFull,  // selon le plan
+              stripeCurrentPeriodEnd: periodEnd,
+              subscriptionEnd: periodEnd,
+            },
           });
-          await majUtilisateurDepuisSub(sub, invoice.metadata?.userId);
-          console.log(`✅ Paiement OK pour sub ${sub.id}`);
+          console.log(`✅ Paiement OK: user ${user.id} -> ACTIVE`);
         }
         break;
       }
 
-      // ❌ Paiement échoué → on ANNULE IMMÉDIATEMENT la souscription et on coupe l'accès
+      /* ❌ Paiement échoué → on ANNULE et on coupe l’accès immédiatement */
       case "invoice.payment_failed": {
         const invoice = event.data.object;
-        if (invoice.subscription) {
-          const currentSub = await stripe.subscriptions.retrieve(invoice.subscription, {
-            expand: ["items.data.price"],
-          });
+        if (!invoice.subscription) break;
 
-          // Annulation immédiate côté Stripe
-          // (tu peux passer { invoice_now: false, prorate: false } si tu veux)
-          const canceled = await stripe.subscriptions.cancel(currentSub.id);
+        const sub = await stripe.subscriptions.retrieve(invoice.subscription, {
+          expand: ["items.data.price"],
+        });
+        const canceled = await stripe.subscriptions.cancel(sub.id);
 
-          const custId = canceled.customer?.toString();
-          const endedAt = canceled.ended_at ? new Date(canceled.ended_at * 1000) : new Date();
+        const custId  = canceled.customer?.toString();
+        const endedAt = canceled.ended_at ? new Date(canceled.ended_at * 1000) : new Date();
 
+        // retrouve user
+        let email = null;
+        try {
+          if (custId) {
+            const c = await stripe.customers.retrieve(custId);
+            // @ts-ignore
+            email = c?.email || null;
+          }
+        } catch {}
+
+        const user = await resolveUser({
+          metadataUserId: invoice?.metadata?.userId,
+          stripeCustomerId: custId,
+          customerEmail: email,
+        });
+        if (user) {
           await prisma.user.update({
-            where: { stripeCustomerId: custId },
+            where: { id: user.id },
             data: {
               stripeSubscriptionId: canceled.id,
               stripeStatus: "canceled",
               isSubscribed: false,
               hasAccessToFullContent: false,
               cancelAtPeriodEnd: false,
-              // on met les dates à "finie" pour que getAccessRights coupe
               stripeCurrentPeriodEnd: endedAt,
               subscriptionEnd: endedAt,
-              // trialEndsAt: on ne touche pas (souvent null à ce stade)
             },
           });
-
-          console.log(`🛑 Échec paiement → sub ${currentSub.id} ANNULÉE, accès révoqué.`);
+          console.log(`🛑 Paiement ÉCHOUÉ: user ${user.id} -> CANCELED`);
         }
         break;
       }
 
-      // 🧾 Checkout terminé → première souscription
+      /* Checkout terminé (utile si tu veux déjà remplir stripeCustomerId) */
       case "checkout.session.completed": {
         const session = event.data.object;
-        if (session.subscription) {
-          const sub = await stripe.subscriptions.retrieve(session.subscription, {
-            expand: ["items.data.price"],
+        if (!session.subscription) break;
+
+        const sub = await stripe.subscriptions.retrieve(session.subscription, {
+          expand: ["items.data.price"],
+        });
+        await majUtilisateurDepuisSub(sub, { metadataUserId: session?.metadata?.userId });
+
+        // Si Stripe a déjà marqué paid (cas “payment_status: paid”), on peut déjà activer
+        if (session.payment_status === "paid") {
+          const custId    = sub.customer?.toString() || null;
+          const priceId   = sub.items?.data?.[0]?.price?.id || null;
+          const periodEnd = sub.current_period_end ? new Date(sub.current_period_end * 1000) : null;
+          const { hasFull } = computeLabels(priceId);
+
+          // retrouve user
+          let email = null;
+          try {
+            if (custId) {
+              const c = await stripe.customers.retrieve(custId);
+              // @ts-ignore
+              email = c?.email || null;
+            }
+          } catch {}
+
+          const user = await resolveUser({
+            metadataUserId: session?.metadata?.userId,
+            stripeCustomerId: custId,
+            customerEmail: email,
           });
-          await majUtilisateurDepuisSub(sub, session.metadata?.userId);
+          if (user) {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: {
+                stripeStatus: "active",
+                isSubscribed: true,
+                hasAccessToFullContent: hasFull,
+                stripeCurrentPeriodEnd: periodEnd,
+                subscriptionEnd: periodEnd,
+              },
+            });
+            console.log(`⚡️ Checkout paid: user ${user.id} -> ACTIVE`);
+          }
         }
         break;
       }
 
-      // 🔄 Création / mise à jour (chgt plan, annulation côté dashboard, etc.)
-      case "customer.subscription.created":
+      /* Mises à jour/annulations depuis le Dashboard Stripe */
       case "customer.subscription.updated": {
         const sub = event.data.object;
-        const custId = sub.customer?.toString();
+        await majUtilisateurDepuisSub(sub);
 
-        // Si l'admin a annulé immédiatement dans Stripe (status === 'canceled')
+        // si status=canceled on coupe immédiatement
         if (sub.status === "canceled") {
+          const custId  = sub.customer?.toString();
           const endedAt = sub.ended_at ? new Date(sub.ended_at * 1000) : new Date();
+
+          const user = await resolveUser({ stripeCustomerId: custId });
+          if (user) {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: {
+                stripeStatus: "canceled",
+                isSubscribed: false,
+                hasAccessToFullContent: false,
+                cancelAtPeriodEnd: false,
+                stripeCurrentPeriodEnd: endedAt,
+                subscriptionEnd: endedAt,
+              },
+            });
+            console.log(`🔒 Updated->canceled: user ${user.id} -> CANCELED`);
+          }
+        }
+        break;
+      }
+
+      case "customer.subscription.deleted": {
+        const sub = event.data.object;
+        const custId  = sub.customer?.toString();
+        const endedAt = sub.ended_at ? new Date(sub.ended_at * 1000) : new Date();
+
+        const user = await resolveUser({ stripeCustomerId: custId });
+        if (user) {
           await prisma.user.update({
-            where: { stripeCustomerId: custId },
+            where: { id: user.id },
             data: {
               stripeSubscriptionId: sub.id,
               stripeStatus: "canceled",
@@ -156,34 +298,8 @@ export default async function handler(req, res) {
               subscriptionEnd: endedAt,
             },
           });
-          console.log("🔒 Accès révoqué (status=canceled).");
-          break;
+          console.log(`ℹ️ Deleted: user ${user.id} -> CANCELED`);
         }
-
-        // Sinon, maj standard (garde accès si active/trialing, pas en past_due)
-        await majUtilisateurDepuisSub(sub, undefined);
-        break;
-      }
-
-      // 🗑️ Souscription supprimée / résiliée (annulation immédiate depuis dashboard)
-      case "customer.subscription.deleted": {
-        const sub = event.data.object;
-        const custId = sub.customer?.toString();
-        const endedAt = sub.ended_at ? new Date(sub.ended_at * 1000) : new Date();
-
-        await prisma.user.update({
-          where: { stripeCustomerId: custId },
-          data: {
-            stripeSubscriptionId: sub.id,
-            stripeStatus: sub.status || "canceled",
-            isSubscribed: false,
-            hasAccessToFullContent: false,
-            cancelAtPeriodEnd: false,
-            stripeCurrentPeriodEnd: endedAt,
-            subscriptionEnd: endedAt,
-          },
-        });
-        console.log(`ℹ️ Abonnement supprimé pour ${sub.id} — accès révoqué.`);
         break;
       }
 
@@ -191,7 +307,7 @@ export default async function handler(req, res) {
         console.log(`ℹ️ Événement ignoré : ${event.type}`);
     }
   } catch (err) {
-    console.error("❌ Erreur dans le handler webhook :", err);
+    console.error("❌ Erreur webhook:", err);
     return res.status(500).json({ error: "server_error" });
   }
 
