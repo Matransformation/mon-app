@@ -17,28 +17,28 @@ export default function ChangeRepasModal({ repas, onClose, onUpdate }) {
   useEffect(() => {
     axios
       .get("/api/recettes")
-      .then(res => setRecipes(res.data))
+      .then((res) => setRecipes(res.data))
       .catch(console.error);
   }, []);
 
-  const favoris = recipes.filter(r => r.isFavorite);
-  const priority = recipes.filter(r => PRIORITY_IDS.includes(r.id));
-  const rest = recipes.filter(r => !PRIORITY_IDS.includes(r.id));
+  const favoris = recipes.filter((r) => r.isFavorite);
+  const priority = recipes.filter((r) => PRIORITY_IDS.includes(r.id));
+  const rest = recipes.filter((r) => !PRIORITY_IDS.includes(r.id));
 
   const filtered = useMemo(() => {
-    return rest.filter(r =>
-      r.name.toLowerCase().includes(search.toLowerCase())
-    );
+    const q = (search || "").toLowerCase();
+    return rest.filter((r) => r.name.toLowerCase().includes(q));
   }, [rest, search]);
 
   const handleSelect = async (id) => {
     try {
+      // ✅ CORRECTION: backticks autour de l’URL
       await axios.put(`/api/menu/repas/${repas.id}`, {
         recetteId: id,
         accompagnements: [],
       });
-      onUpdate();
-      onClose();
+      onUpdate?.(); // (dans WeekMenu: onUpdate={() => preserveScroll(reload)})
+      onClose?.();
     } catch (err) {
       console.error("Erreur lors de la sauvegarde:", err);
       alert("Une erreur est survenue lors de la mise à jour du repas.");
@@ -46,98 +46,92 @@ export default function ChangeRepasModal({ repas, onClose, onUpdate }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto relative">
-        {/* ❌ Bouton de fermeture */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+      <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-6">
+        {/* Fermer */}
         <button
+          type="button"
           onClick={onClose}
-          className="absolute top-3 right-3 text-gray-500 hover:text-black"
+          className="absolute right-3 top-3 text-gray-500 hover:text-black"
           aria-label="Fermer"
         >
           <X size={20} />
         </button>
 
-        <h2 className="text-lg font-bold mb-4 text-center">Changer la recette</h2>
+        <h2 className="mb-4 text-center text-lg font-bold">Changer la recette</h2>
 
-        {/* 🔍 Barre de recherche */}
+        {/* Recherche */}
         <input
           type="text"
           placeholder="Rechercher une recette..."
           value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="w-full border p-2 rounded mb-4"
+          onChange={(e) => setSearch(e.target.value)}
+          className="mb-4 w-full rounded border p-2"
         />
 
-        {/* 📌 Suggestions prioritaires */}
+        {/* Suggestions prioritaires */}
         {priority.length > 0 && (
           <div className="mb-4">
-            <h3 className="text-sm font-semibold text-gray-600 mb-2">
+            <h3 className="mb-2 text-sm font-semibold text-gray-600">
               Suggestions en priorité :
             </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {priority.map(r => (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+              {priority.map((r) => (
                 <button
+                  type="button"
                   key={r.id}
                   onClick={() => handleSelect(r.id)}
-                  className="text-left border p-2 rounded hover:border-green-500"
+                  className="rounded border p-2 text-left hover:border-green-500"
                 >
-                  <div className="w-full aspect-video relative mb-1 rounded overflow-hidden">
-                    <Image
-                      src={r.photoUrl}
-                      alt={r.name}
-                      fill
-                      className="object-cover"
-                    />
+                  <div className="relative mb-1 aspect-video w-full overflow-hidden rounded">
+                    <Image src={r.photoUrl} alt={r.name} fill className="object-cover" />
                   </div>
-                  <p className="text-sm truncate">{r.name}</p>
+                  <p className="truncate text-sm">{r.name}</p>
                 </button>
               ))}
             </div>
           </div>
         )}
 
-        {/* ⭐ Favoris */}
+        {/* Favoris */}
         {favoris.length > 0 && (
           <div className="mb-4">
-            <h3 className="text-sm font-semibold text-gray-600 mb-1">Vos favoris :</h3>
+            <h3 className="mb-1 text-sm font-semibold text-gray-600">Vos favoris :</h3>
             <div className="flex gap-3 overflow-x-auto pb-2">
-              {favoris.map(r => (
+              {favoris.map((r) => (
                 <button
+                  type="button"
                   key={r.id}
                   onClick={() => handleSelect(r.id)}
-                  className="min-w-[120px] p-1 border rounded"
+                  className="min-w-[120px] rounded border p-1"
                 >
                   <Image
                     src={r.photoUrl}
                     alt={r.name}
                     width={120}
                     height={80}
-                    className="rounded object-cover mb-1"
+                    className="mb-1 rounded object-cover"
                   />
-                  <p className="text-xs text-center truncate">{r.name}</p>
+                  <p className="truncate text-center text-xs">{r.name}</p>
                 </button>
               ))}
             </div>
           </div>
         )}
 
-        {/* 📋 Liste des recettes filtrées */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
-          {filtered.map(r => (
+        {/* Liste filtrée */}
+        <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
+          {filtered.map((r) => (
             <button
+              type="button"
               key={r.id}
               onClick={() => handleSelect(r.id)}
-              className="text-left border p-2 rounded hover:border-green-500"
+              className="rounded border p-2 text-left hover:border-green-500"
             >
-              <div className="w-full aspect-video relative mb-1 rounded overflow-hidden">
-                <Image
-                  src={r.photoUrl}
-                  alt={r.name}
-                  fill
-                  className="object-cover"
-                />
+              <div className="relative mb-1 aspect-video w-full overflow-hidden rounded">
+                <Image src={r.photoUrl} alt={r.name} fill className="object-cover" />
               </div>
-              <p className="text-sm truncate">{r.name}</p>
+              <p className="truncate text-sm">{r.name}</p>
             </button>
           ))}
         </div>

@@ -2,7 +2,10 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/": "pages/index.js",
+  "/menu": "pages/menu.js",
+  "/api/notifications/unreadCount": "pages/api/notifications/unreadCount.js",
+  "/dashboard": "pages/dashboard.js",
   "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
-  "/login": "pages/login.js"
+  "/api/utilisateur/[id]": "pages/api/utilisateur/[id].js",
+  "/api/menu/[userId]": "pages/api/menu/[userId].js"
 }

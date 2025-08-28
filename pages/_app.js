@@ -5,13 +5,19 @@ import { SpeedInsights } from "@vercel/speed-insights/next"
 import Script from "next/script"
 import CookieBanner from "../components/CookieBanner"
 import WhatsappButton from "../components/WhatsappButton"
+import { GlobalToaster } from "../components/Feedback/Toasts";
 import { useEffect, useState } from "react"
 import { Cookies } from "react-cookie-consent"
 import "../styles/print.css";
 
+// ⬇️ NEW
+import useScrollRestoration from "../hooks/useScrollRestoration";
 
 export default function App({ Component, pageProps }) {
   const [hasConsent, setHasConsent] = useState(false)
+
+  // ⬇️ NEW : active la restauration de scroll pour toute l’app
+  useScrollRestoration();
 
   useEffect(() => {
     const consent = Cookies.get("cookieConsent") // "true" si accepté

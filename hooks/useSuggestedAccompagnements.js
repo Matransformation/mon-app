@@ -1,143 +1,231 @@
 // File: hooks/useSuggestedAccompagnements.js
 import { useMemo } from "react";
 
+// Répartition objectifs
 const repartitionRepas = {
   "petit-dejeuner": 0.3,
-  dejeuner:         0.4,
-  collation:        0.05,
-  diner:            0.25,
+  dejeuner: 0.4,
+  collation: 0.05,
+  diner: 0.25,
 };
 
+// Seuil “manque significatif”
 const isSignificantGap = (val, target) => val < target * 0.95;
 
-const getSuggestedTypes = (repasType, macros, objectifs) => {
-  const manque = {
-    protein: isSignificantGap(macros.protein, objectifs.protein),
-    carbs:   isSignificantGap(macros.carbs,   objectifs.carbs),
-    fat:     isSignificantGap(macros.fat,     objectifs.fat),
-  };
-  const types = new Set();
-
-  if (["petit-dejeuner", "dejeuner", "diner"].includes(repasType)) {
-    types.add("DAIRY");
-  }
-  if (repasType === "petit-dejeuner") {
-    manque.protein && types.add("BREAKFAST_PROTEIN");
-    manque.carbs   && (types.add("CEREAL"), types.add("FRUIT_SIDE"));
-    manque.fat     && types.add("FAT");
-  }
-  if (["dejeuner", "diner"].includes(repasType)) {
-    manque.protein && types.add("PROTEIN");
-    manque.carbs   && types.add("CARB");
-    manque.fat     && types.add("FAT");
-  }
-  if (repasType === "collation") {
-    if (manque.protein || manque.carbs || manque.fat) {
-      manque.protein && (types.add("BREAKFAST_PROTEIN"), types.add("DAIRY"));
-      manque.carbs   && (types.add("CEREAL"), types.add("FRUIT_SIDE"));
-      manque.fat     && types.add("FAT");
-    } else {
-      // Pas de déficit, mais pas de recette => on propose quand même des choix
-      types.add("BREAKFAST_PROTEIN");
-      types.add("DAIRY");
-      types.add("CEREAL");
-      types.add("FRUIT_SIDE");
-      types.add("FAT");
-    }
-  }
-
-  return Array.from(types);
+// Utils sideTypes
+const sideTypesOf = (ing) => {
+  const st = ing?.sideTypes || [];
+  return st.map((x) => (typeof x === "string" ? x : x?.sideType)).filter(Boolean);
 };
 
-const getMacros = (ingredient, qty) => ({
-  protein: (ingredient.protein || 0) * qty / 100,
-  fat:     (ingredient.fat     || 0) * qty / 100,
-  carbs:   (ingredient.carbs   || 0) * qty / 100,
-});
+const hasSide = (ing, key) => sideTypesOf(ing).includes(key);
+
+const isCheese = (ing) =>
+  hasSide(ing, "CHEESE") ||
+  /fromage(?!\s*blanc)|parmesan|emmental|gruy[eè]re|comt[ée]|mozzarella|cheddar|raclette|cantal|brie|camembert|feta|pecorino|roquefort|reblochon|tomme|gorgonzola|ricotta|mascarpone|philadelphia|r[aâ]p[ée]/i.test(
+    ing?.name || ""
+  );
+
+const isNonCheeseDairy = (ing) => hasSide(ing, "DAIRY") && !isCheese(ing);
+
+const isProteinSide = (ing) => hasSide(ing, "PROTEIN") || hasSide(ing, "BREAKFAST_PROTEIN");
+
+// Poudres masquées par défaut
+const looksLikePowder = (ing) =>
+  /whey|cas[ée]ine|isolate|gainer|protein powder|protéine en poudre|impact whey/i.test(
+    ing?.name || ""
+  ) || ing?.ingredientType === "POWDER";
+
+// Macros utilitaires pour 100 g → qty
+const macrosFrom = (ing, qty) => {
+  const f = (qty || 0) / 100;
+  return {
+    p: (ing?.protein || 0) * f,
+    f: (ing?.fat || 0) * f,
+    c: (ing?.carbs || 0) * f,
+  };
+};
+
+// Score simple pour trier par adéquation macro
+const scoreForProtein = (ing) => (ing?.protein || 0) - 0.2 * ((ing?.fat || 0) + (ing?.carbs || 0));
+const scoreForCarb = (ing) => (ing?.carbs || 0) - 0.3 * (ing?.fat || 0);
+const scoreForFat = (ing) => (ing?.fat || 0) - 0.2 * (ing?.carbs || 0);
 
 export default function useSuggestedAccompagnements({ repas, user, allIngredients }) {
   return useMemo(() => {
-    if (!user || !Array.isArray(allIngredients)) return {};
+    if (!user || !repas || !Array.isArray(allIngredients)) return {};
 
+    const includePowders = false; // 🔒 par défaut, on masque les poudres
+
+    // Objectifs du repas
     const ratio = repartitionRepas[repas.repasType] || 0;
     const objectifs = {
       protein: user.poids * 1.8 * ratio,
-      fat:     (user.metabolismeCible * 0.3 / 9) * ratio,
-      carbs:   ((user.metabolismeCible - user.poids * 1.8 * 4 - user.metabolismeCible * 0.3) / 4) * ratio,
+      fat: (user.metabolismeCible * 0.3) / 9 * ratio,
+      carbs: ((user.metabolismeCible - user.poids * 1.8 * 4 - user.metabolismeCible * 0.3) / 4) * ratio,
     };
 
-    const factorInit = repas.recipeFactor || 1;
+    // Macros actuelles = recette figée (recipeFactor) + accompagnements existants
+    const rf = repas.recipeFactor ?? 1;
+    const macrosRecette = (repas.recette?.ingredients || []).reduce(
+      (s, ri) => {
+        const qty = (ri.quantity || 0) * rf;
+        const m = macrosFrom(ri.ingredient, qty);
+        return { p: s.p + m.p, f: s.f + m.f, c: s.c + m.c };
+      },
+      { p: 0, f: 0, c: 0 }
+    );
+    const macrosAcc = (repas.accompagnements || []).reduce(
+      (s, a) => {
+        const m = macrosFrom(a.ingredient, a.quantity || 0);
+        return { p: s.p + m.p, f: s.f + m.f, c: s.c + m.c };
+      },
+      { p: 0, f: 0, c: 0 }
+    );
+    const macros = {
+      protein: macrosRecette.p + macrosAcc.p,
+      fat: macrosRecette.f + macrosAcc.f,
+      carbs: macrosRecette.c + macrosAcc.c,
+    };
 
-    const baseRecipeMacros = { protein: 0, fat: 0, carbs: 0 };
-    let macrosRecetteInit = { protein: 0, fat: 0, carbs: 0 };
+    // Contexte laitiers / PDJ
+    const recipeHasCheese = !!(repas.recette?.ingredients || []).some((ri) => isCheese(ri.ingredient));
+    const recipeHasNonCheeseDairy = !!(repas.recette?.ingredients || []).some((ri) =>
+      isNonCheeseDairy(ri.ingredient)
+    );
+    const recipeHasAnyDairy = recipeHasCheese || recipeHasNonCheeseDairy;
 
-    if (repas.recette) {
-      repas.recette.ingredients.forEach(ri => {
-        const q0 = ri.quantity || 0;
-        const f0 = q0 / 100;
-        baseRecipeMacros.protein += (ri.ingredient.protein || 0) * f0;
-        baseRecipeMacros.fat     += (ri.ingredient.fat     || 0) * f0;
-        baseRecipeMacros.carbs   += (ri.ingredient.carbs   || 0) * f0;
-        const m = getMacros(ri.ingredient, q0 * factorInit);
-        macrosRecetteInit.protein += m.protein;
-        macrosRecetteInit.fat     += m.fat;
-        macrosRecetteInit.carbs   += m.carbs;
-      });
+    const accHasCheese = (repas.accompagnements || []).some((a) => isCheese(a.ingredient));
+    const accHasNonCheeseDairy = (repas.accompagnements || []).some((a) =>
+      isNonCheeseDairy(a.ingredient)
+    );
+    const isBreakfast = repas.repasType === "petit-dejeuner";
+    const accHasProtein = (repas.accompagnements || []).some((a) => isProteinSide(a.ingredient));
+
+    // Manques
+    const manque = {
+      protein: isSignificantGap(macros.protein, objectifs.protein),
+      carbs: isSignificantGap(macros.carbs, objectifs.carbs),
+      fat: isSignificantGap(macros.fat, objectifs.fat),
+    };
+
+    // Pool de base filtré (pas de poudres par défaut)
+    let pool = allIngredients.filter((ing) => (includePowders ? true : !looksLikePowder(ing)));
+
+    // 1) LÉGUMES (priorité dej/dîner si pas dans recette ni accompagnements)
+    const hasVegetableAlready =
+      (repas.recette?.ingredients || []).some((ri) => hasSide(ri.ingredient, "VEGETABLE_SIDE")) ||
+      (repas.accompagnements || []).some((a) => hasSide(a.ingredient, "VEGETABLE_SIDE"));
+    const needVegetable = ["dejeuner", "diner"].includes(repas.repasType) && !hasVegetableAlready;
+
+    // 2) LAITIERS — règles de masquage (juste côté suggestion ; l’API reste juge)
+    let dairyAllowed = !recipeHasAnyDairy; // si laitier dans la recette ⇒ pas de suggestions laitiers
+    let dairyFilterFn = (ing) => true;
+    if (accHasCheese) {
+      // déjà du fromage en accompagnement ⇒ proposer seulement fromages OU rien selon politique ; ici on retire les non-fromage
+      dairyFilterFn = (ing) => isCheese(ing);
+    }
+    if (accHasNonCheeseDairy) {
+      // déjà un laitier non-fromage ⇒ ne pas proposer de fromages
+      dairyFilterFn = (ing) => isNonCheeseDairy(ing);
     }
 
-    const macrosSide = (repas.accompagnements || []).reduce((sum, a) => {
-      const m = getMacros(a.ingredient, a.quantity || 0);
-      return {
-        protein: sum.protein + m.protein,
-        fat:     sum.fat     + m.fat,
-        carbs:   sum.carbs   + m.carbs,
-      };
-    }, { protein: 0, fat: 0, carbs: 0 });
+    // 3) Types à proposer selon manques + contexte
+    const typesWanted = new Set();
 
-    let macros = {
-      protein: macrosRecetteInit.protein + macrosSide.protein,
-      fat:     macrosRecetteInit.fat     + macrosSide.fat,
-      carbs:   macrosRecetteInit.carbs   + macrosSide.carbs,
-    };
+    if (needVegetable) typesWanted.add("VEGETABLE_SIDE");
 
-    let types = getSuggestedTypes(repas.repasType, macros, objectifs);
+    if (manque.carbs) {
+      typesWanted.add("FRUIT_SIDE");
+      typesWanted.add("CEREAL");
+      typesWanted.add("CARB");
+    }
 
-    if (types.length === 0 && repas.recette) {
-      const gaps = {
-        protein: Math.max(0, objectifs.protein - macrosSide.protein),
-        fat:     Math.max(0, objectifs.fat     - macrosSide.fat),
-        carbs:   Math.max(0, objectifs.carbs   - macrosSide.carbs),
-      };
-      const macroToFree = Object.keys(gaps).reduce((a, b) => gaps[a] > gaps[b] ? a : b);
-      if (baseRecipeMacros[macroToFree] > 0) {
-        const newFactor = gaps[macroToFree] / baseRecipeMacros[macroToFree];
-        const recetteMacros2 = { protein: 0, fat: 0, carbs: 0 };
-        repas.recette.ingredients.forEach(ri => {
-          const m = getMacros(ri.ingredient, (ri.quantity || 0) * newFactor);
-          recetteMacros2.protein += m.protein;
-          recetteMacros2.fat     += m.fat;
-          recetteMacros2.carbs   += m.carbs;
-        });
-        macros = {
-          protein: recetteMacros2.protein + macrosSide.protein,
-          fat:     recetteMacros2.fat     + macrosSide.fat,
-          carbs:   recetteMacros2.carbs   + macrosSide.carbs,
-        };
-        types = getSuggestedTypes(repas.repasType, macros, objectifs);
+    if (manque.protein) {
+      if (isBreakfast) {
+        if (!accHasProtein) typesWanted.add("BREAKFAST_PROTEIN"); // une seule source au PDJ
+      } else {
+        typesWanted.add("PROTEIN");
       }
     }
 
+    if (manque.fat) typesWanted.add("FAT");
+
+    if (!manque.protein && !manque.carbs && !manque.fat) {
+      // Pas de manque mais on laisse des options légères
+      if (isBreakfast && !accHasProtein) typesWanted.add("BREAKFAST_PROTEIN");
+      typesWanted.add("FRUIT_SIDE");
+      if (!needVegetable) typesWanted.add("VEGETABLE_SIDE");
+    }
+
+    // 4) Construire les listes par type
     const byType = {};
-    types.forEach(type => {
-      let opts = allIngredients.filter(ing =>
-        (ing.sideTypes || []).some(st => typeof st === "string" ? st === type : st.sideType === type)
-      );
-      if (type === "FRUIT_SIDE") {
-        const rest = Math.max(0, objectifs.carbs - macros.carbs);
-        opts = opts.filter(ing => ing.carbs <= rest);
+
+    // Helper: limiter et trier par adéquation macro
+    const topN = (arr, n) => arr.slice(0, n);
+
+    // VEGETABLE_SIDE
+    if (typesWanted.has("VEGETABLE_SIDE")) {
+      const veg = pool.filter((ing) => hasSide(ing, "VEGETABLE_SIDE"));
+      // Tri simple alpha
+      byType.VEGETABLE_SIDE = topN(veg.sort((a, b) => a.name.localeCompare(b.name)), 5);
+    }
+
+    // DAIRY (avec règles de masquage)
+    if (dairyAllowed) {
+      let dairy = pool.filter((ing) => hasSide(ing, "DAIRY"));
+      dairy = dairy.filter(dairyFilterFn);
+      if (dairy.length) byType.DAIRY = topN(dairy.sort((a, b) => a.name.localeCompare(b.name)), 5);
+    }
+
+    // FRUIT_SIDE
+    if (typesWanted.has("FRUIT_SIDE")) {
+      let fruits = pool.filter((ing) => hasSide(ing, "FRUIT_SIDE"));
+      // éviter les fruits très gras (rare) ; tri par glucides
+      fruits = fruits.sort((a, b) => (b.carbs || 0) - (a.carbs || 0));
+      byType.FRUIT_SIDE = topN(fruits, 5);
+    }
+
+    // CEREAL / CARB
+    if (typesWanted.has("CEREAL") || typesWanted.has("CARB")) {
+      let starchy = pool.filter((ing) => hasSide(ing, "CEREAL") || hasSide(ing, "CARB"));
+      // trier par glucides nets (faible lipides mieux classés)
+      starchy = starchy
+        .slice()
+        .sort((a, b) => scoreForCarb(b) - scoreForCarb(a));
+      if (typesWanted.has("CEREAL"))
+        byType.CEREAL = topN(starchy.filter((i) => hasSide(i, "CEREAL")), 5);
+      if (typesWanted.has("CARB"))
+        byType.CARB = topN(starchy.filter((i) => hasSide(i, "CARB")), 5);
+    }
+
+    // PROTEIN / BREAKFAST_PROTEIN
+    if (typesWanted.has("PROTEIN") || typesWanted.has("BREAKFAST_PROTEIN")) {
+      let prots = pool.filter((ing) => hasSide(ing, "PROTEIN") || hasSide(ing, "BREAKFAST_PROTEIN"));
+      // au PDJ si une protéine est déjà présente dans les accompagnements, on ne propose rien
+      if (isBreakfast && accHasProtein) {
+        prots = [];
       }
-      if (opts.length) byType[type] = opts;
-    });
+      // trier protéines denses et “propres” (peu gras/sucre)
+      prots = prots
+        .filter((ing) => !looksLikePowder(ing)) // sécurité anti-poudre même si includePowders=false déjà appliqué
+        .slice()
+        .sort((a, b) => scoreForProtein(b) - scoreForProtein(a));
+      if (typesWanted.has("BREAKFAST_PROTEIN"))
+        byType.BREAKFAST_PROTEIN = topN(
+          prots.filter((i) => hasSide(i, "BREAKFAST_PROTEIN") || hasSide(i, "PROTEIN")),
+          5
+        );
+      if (typesWanted.has("PROTEIN"))
+        byType.PROTEIN = topN(prots.filter((i) => hasSide(i, "PROTEIN")), 5);
+    }
+
+    // FAT
+    if (typesWanted.has("FAT")) {
+      let fats = pool.filter((ing) => hasSide(ing, "FAT"));
+      fats = fats.slice().sort((a, b) => scoreForFat(b) - scoreForFat(a));
+      byType.FAT = topN(fats, 5);
+    }
 
     return byType;
   }, [repas, user, allIngredients]);
