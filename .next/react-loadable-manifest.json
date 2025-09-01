@@ -4,23 +4,5 @@
     "files": [
       "static/chunks/_pages-dir-browser_components_MealCard_IngredientsBlock_js.js"
     ]
-  },
-  "components/dashboard/WeightChart.js -> react-chartjs-2": {
-    "id": "components/dashboard/WeightChart.js -> react-chartjs-2",
-    "files": [
-      "static/chunks/_pages-dir-browser_node_modules_react-chartjs-2_dist_index_js.js"
-    ]
-  },
-  "pages/dashboard.js -> react-chartjs-2": {
-    "id": "pages/dashboard.js -> react-chartjs-2",
-    "files": [
-      "static/chunks/_pages-dir-browser_node_modules_react-chartjs-2_dist_index_js.js"
-    ]
-  },
-  "pages/dashboard.js -> react-confetti": {
-    "id": "pages/dashboard.js -> react-confetti",
-    "files": [
-      "static/chunks/_pages-dir-browser_node_modules_react-confetti_dist_react-confetti_mjs.js"
-    ]
   }
 }

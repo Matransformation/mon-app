@@ -1,3 +1,4 @@
+// pages/menu/index.js
 import React from "react";
 import Navbar from "../components/Navbar";
 import WeekMenu from "../components/Menu/WeekMenu";
@@ -11,11 +12,11 @@ function MenuPage({ user }) {
     <>
       <Navbar />
       <div className="bg-cream-50 min-h-screen py-8">
-      {user?.id ? (
-  <WeekMenu user={user} key={user.id} />
-) : (
-  <div className="text-center mt-10">Chargement…</div>
-)}
+        {user?.id ? (
+          <WeekMenu user={user} key={user.id} />
+        ) : (
+          <div className="text-center mt-10">Chargement…</div>
+        )}
       </div>
     </>
   );
@@ -33,22 +34,43 @@ export const getServerSideProps = async (context) => {
     };
   }
 
+  // IDs d’abonnement autorisés pour la page Menu (mensuel/annuel)
+  const PRICE_MONTHLY = process.env.NEXT_PUBLIC_PRICE_MONTHLY;
+  const PRICE_ANNUAL = process.env.NEXT_PUBLIC_PRICE_ANNUAL;
+
   const dbUser = await prisma.user.findUnique({
     where: { email: session.user.email },
     select: {
       id: true,
       poids: true,
       metabolismeCible: true,
-      isSubscribed: true,
+      stripePriceId: true,
       stripeCurrentPeriodEnd: true,
       trialEndsAt: true,
     },
   });
 
-  const now = new Date();
-  const trialActive = dbUser?.trialEndsAt && now <= new Date(dbUser.trialEndsAt);
-  const stillActive = dbUser?.stripeCurrentPeriodEnd && new Date(dbUser.stripeCurrentPeriodEnd) > now;
-  const hasAccess = dbUser?.isSubscribed || stillActive || trialActive;
+  if (!dbUser) {
+    return {
+      redirect: {
+        destination: "/auth/signin",
+        permanent: false,
+      },
+    };
+  }
+
+  const now = Date.now();
+  const trialActive =
+    dbUser.trialEndsAt && new Date(dbUser.trialEndsAt).getTime() > now;
+  const subActive =
+    dbUser.stripeCurrentPeriodEnd &&
+    new Date(dbUser.stripeCurrentPeriodEnd).getTime() > now;
+
+  // ✅ Accès uniquement si période d’essai OU abonnement actif sur un plan Menu
+  const planAllowed = [PRICE_MONTHLY, PRICE_ANNUAL].includes(
+    dbUser.stripePriceId
+  );
+  const hasAccess = trialActive || (subActive && planAllowed);
 
   if (!hasAccess) {
     return {
