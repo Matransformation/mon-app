@@ -1,4 +1,3 @@
-// components/Navbar.js
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -73,6 +72,8 @@ export default function Navbar() {
   // Liens
   const NAV_LINKS = [
     { href: "/dashboard", label: "Dashboard", Icon: Home },
+    // ➕ Nouveau lien Coaching sport (top-level)
+    { href: "/coaching-sport", label: "Coaching sport", Icon: Dumbbell },
     { href: "/training", label: "Fitness", Icon: Dumbbell },
     {
       label: "Nutrition",

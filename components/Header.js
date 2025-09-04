@@ -15,6 +15,15 @@ export default function Header() {
       >
         Nos recettes
       </Link>
+
+      {/* Nouveau lien Coaching sport */}
+      <Link
+        href="/coaching-sport"
+        aria-label="Voir l’offre de coaching sportif"
+        className="inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 font-semibold text-gray-900 transition hover:bg-gray-50"
+      >
+        Coaching sport
+      </Link>
     </nav>
   );
 
@@ -107,7 +116,7 @@ export default function Header() {
 
             {/* Liens plus fins */}
             <nav className="mt-4 space-y-2 text-base">
-              {/* Nos recettes : lien avec highlight orange incliné sous le texte */}
+              {/* Nos recettes */}
               <Link
                 href="/recettes"
                 onClick={() => setOpen(false)}
@@ -121,6 +130,17 @@ export default function Header() {
                   />
                   Nos recettes
                 </span>
+                <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-gray-700" />
+              </Link>
+
+              {/* Nouveau : Coaching sport */}
+              <Link
+                href="/coaching-sport"
+                onClick={() => setOpen(false)}
+                className="group flex items-center justify-between rounded-xl border border-gray-100 bg-white px-3 py-3"
+                aria-label="Voir l’offre de coaching sportif"
+              >
+                <span className="font-medium text-gray-900">Coaching sport</span>
                 <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-gray-700" />
               </Link>
 
