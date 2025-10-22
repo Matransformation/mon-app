@@ -33,21 +33,26 @@ export default function ListeRecettes() {
       const res = await axios.get("/api/recettes");
       const sorted = res.data
         .slice()
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        .sort((a, b) => (a?.name || "").localeCompare(b?.name || "", "fr", { sensitivity: "base" }));
       setRecettes(sorted);
     } catch (err) {
       console.error("Erreur chargement recettes :", err);
     }
   }
+  
 
   async function fetchCategories() {
     try {
       const res = await axios.get("/api/categories");
-      setCategories(res.data);
+      const sorted = res.data
+        .slice()
+        .sort((a, b) => a.name?.localeCompare(b.name, "fr", { sensitivity: "base" }));
+      setCategories(sorted);
     } catch (err) {
       console.error("Erreur chargement catégories :", err);
     }
   }
+  
 
   function calculerNutritionEtPrix(ingredients) {
     let totalCalories = 0,
@@ -89,12 +94,15 @@ export default function ListeRecettes() {
 
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (r) =>
-          r.name.toLowerCase().includes(q) ||
-          r.ingredients.some((ri) => ri.ingredient?.name.toLowerCase().includes(q))
-      );
+      filtered = filtered.filter((r) => {
+        const matchName = (r?.name || "").toLowerCase().includes(q);
+        const matchIng = (r?.ingredients || []).some(
+          (ri) => (ri?.ingredient?.name || "").toLowerCase().includes(q)
+        );
+        return matchName || matchIng;
+      });
     }
+    
 
     if (!session) {
       filtered.sort((a, b) => {
@@ -261,23 +269,38 @@ export default function ListeRecettes() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 py-8">
         {/* Toolbar: catégories + tris + toggles */}
         <div className="flex flex-col gap-4">
-          {/* Chips catégories scrollables */}
-          <div className="relative">
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-              <Chip active={selectedCategory === null} onClick={() => setSelectedCategory(null)}>
-                Toutes
-              </Chip>
-              {categories.map((cat) => (
-                <Chip
-                  key={cat.id}
-                  active={selectedCategory === cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                >
-                  {cat.name}
-                </Chip>
-              ))}
-            </div>
-          </div>
+        <h2 className="text-xl font-semibold mb-4">Toutes les recettes (ordre alphabétique)</h2>
+
+{/* Liste de toutes les catégories */}
+<div className="flex flex-wrap gap-2 mb-6">
+  <button
+    onClick={() => setSelectedCategory(null)}
+    className={clsx(
+      "px-3 py-1 rounded-full text-sm",
+      selectedCategory === null
+        ? "bg-green-600 text-white shadow"
+        : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+    )}
+  >
+    Toutes
+  </button>
+
+  {categories.map((cat) => (
+    <button
+      key={cat.id}
+      onClick={() => setSelectedCategory(cat.id)}
+      className={clsx(
+        "px-3 py-1 rounded-full text-sm",
+        selectedCategory === cat.id
+          ? "bg-green-600 text-white shadow"
+          : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+      )}
+    >
+      {cat.name}
+    </button>
+  ))}
+</div>
+
 
           {/* Ligne: tri + toggles */}
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -375,15 +398,24 @@ export default function ListeRecettes() {
                     <p>💶 {isAccessible ? `${nutrition.price} €` : "– €"}</p>
                   </div>
 
-                  {recette.categories.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {recette.categories.map((cat) => (
-                        <span key={cat.id} className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs">
-                          {cat.category?.name}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                  {(recette.categories || []).length > 0 && (
+  <div className="flex flex-wrap gap-2">
+    {recette.categories.map((rc, idx) => {
+      const catName =
+        rc.category?.name || rc.name || rc.categoryName || "Catégorie inconnue";
+      const catId = rc.category?.id || rc.id || idx;
+      return (
+        <span
+          key={catId}
+          className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs"
+        >
+          {catName}
+        </span>
+      );
+    })}
+  </div>
+)}
+
 
                   <div className="pt-1 flex justify-end">
                     {isAccessible ? (
