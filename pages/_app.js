@@ -5,26 +5,34 @@ import { SpeedInsights } from "@vercel/speed-insights/next"
 import Script from "next/script"
 import CookieBanner from "../components/CookieBanner"
 import WhatsappButton from "../components/WhatsappButton"
-import { GlobalToaster } from "../components/Feedback/Toasts";
+import { GlobalToaster } from "../components/Feedback/Toasts"
 import { useEffect, useState } from "react"
 import { Cookies } from "react-cookie-consent"
-import "../styles/print.css";
+import "../styles/print.css"
 
 // ⬇️ NEW
-import useScrollRestoration from "../hooks/useScrollRestoration";
+import useScrollRestoration from "../hooks/useScrollRestoration"
+import { useRouter } from "next/router"
+import AddToHomeBanner from "../components/AddToHomeBanner"
 
 export default function App({ Component, pageProps }) {
   const [hasConsent, setHasConsent] = useState(false)
+  const router = useRouter()
 
-  // ⬇️ NEW : active la restauration de scroll pour toute l’app
-  useScrollRestoration();
+  // Active la restauration du scroll globalement
+  useScrollRestoration()
 
+  // Vérifie le consentement cookies
   useEffect(() => {
     const consent = Cookies.get("cookieConsent") // "true" si accepté
     if (consent === "true") {
       setHasConsent(true)
     }
   }, [])
+
+  // Pages où la bannière ne doit PAS apparaître
+  const excludedRoutes = ["/", "/register", "/login"]
+  const shouldShowBanner = !excludedRoutes.includes(router.pathname)
 
   return (
     <SessionProvider session={pageProps.session}>
@@ -75,13 +83,16 @@ export default function App({ Component, pageProps }) {
         {/* 2) Contenu principal */}
         <Component {...pageProps} />
 
-        {/* 3) Bannière cookie avec mascotte */}
+        {/* 3) Bannière cookie */}
         <CookieBanner />
 
-        {/* 4) Bouton WhatsApp — se positionne automatiquement */}
+        {/* 4) Bouton WhatsApp */}
         <WhatsappButton />
 
-        {/* 5) Speed Insights (Vercel) */}
+        {/* 5) Bannière mobile (sauf accueil, inscription et login) */}
+        {shouldShowBanner && <AddToHomeBanner />}
+
+        {/* 6) Speed Insights (Vercel) */}
         <SpeedInsights />
       </>
     </SessionProvider>
