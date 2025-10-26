@@ -23,7 +23,7 @@ export default function AddToHomeBanner() {
 
   return (
     <div
-      className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[92%] sm:w-[380px] z-50 animate-slideUp"
+      className="fixed bottom-24 left-1/2 -translate-x-1/2 w-[92%] sm:w-[380px] z-40 animate-slideUp"
       style={{ animation: "slideUp 0.4s ease-out" }}
     >
       <div className="relative bg-gradient-to-r from-orange-400 to-pink-400 text-white shadow-xl rounded-3xl p-4 pb-5 overflow-hidden">
