@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "../components/Navbar";
 import Card from "../components/dashboard/Card";
-import UserHeader from "../components/dashboard/UserHeader";
 import WeightTracker from "../components/dashboard/WeightTracker";
 import MetabolismForm from "../components/dashboard/MetabolismForm";
 import WeightChart from "../components/dashboard/WeightChart";
@@ -36,10 +35,12 @@ function Dashboard({ utilisateur }) {
   const [metabolismeCible, setMetabolismeCible] = useState(utilisateur.metabolismeCible ?? "");
   const [mensuList, setMensuList] = useState(utilisateur.mensurations);
   const [showConfetti, setShowConfetti] = useState(false);
+
+  // ✅ Tout fermé par défaut
   const [openSections, setOpenSections] = useState({
-    poids: true,
-    metabolisme: true,
-    graph: true,
+    poids: false,
+    metabolisme: false,
+    graph: false,
     mensu: false,
     ajouter: false,
   });
@@ -179,39 +180,35 @@ function Dashboard({ utilisateur }) {
               Ajoute ton premier poids pour suivre ta progression 👇
             </p>
           )}
-
-          <div className="mt-4 flex gap-3">
-            <a
-              href="/menu"
-              className="flex-1 inline-flex justify-center rounded-xl bg-orange-500 text-white px-4 py-2 font-semibold hover:brightness-110 transition"
-            >
-              🍽️ Menu personnalisé
-            </a>
-            <a
-              href="/recettes"
-              className="flex-1 inline-flex justify-center rounded-xl border border-orange-200 bg-white text-gray-800 px-4 py-2 font-semibold hover:bg-orange-50 transition"
-            >
-              🎂 Recettes
-            </a>
-          </div>
         </motion.div>
 
-        {/* STATS */}
-        <motion.div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <Card title="Poids actuel" icon="⚖️" className="bg-white/90 shadow-sm">
-            <p className="text-3xl font-extrabold text-slate-900">
-              {dernierPoids ? `${dernierPoids} kg` : "—"}
-            </p>
-          </Card>
-          <Card title="Métabolisme cible" icon="🔥" className="bg-white/90 shadow-sm">
-            <p className="text-3xl font-extrabold text-slate-900">
-              {metabolismeCible ? `${metabolismeCible} kcal/j` : "—"}
-            </p>
-          </Card>
-          <Card title="Dernière mensuration" icon="📏" className="bg-white/90 shadow-sm">
-            <p className="text-3xl font-extrabold text-slate-900">{derniereMensuDate}</p>
-          </Card>
-        </motion.div>
+        {/* STATS (version plus compacte) */}
+        {/* STATS regroupées */}
+<motion.div className="mb-6">
+  <Card className="bg-white/90 shadow-sm p-5">
+    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+      <div className="flex items-center gap-2 text-gray-800">
+        <span className="text-lg">⚖️</span>
+        <span className="font-semibold">Poids actuel :</span>
+        <span className="text-gray-900 font-bold">
+          {dernierPoids ? `${dernierPoids} kg` : "—"}
+        </span>
+      </div>
+      <div className="flex items-center gap-2 text-gray-800">
+        <span className="text-lg">🔥</span>
+        <span className="font-semibold">Métabolisme cible :</span>
+        <span className="text-gray-900 font-bold">
+          {metabolismeCible ? `${metabolismeCible} kcal/j` : "—"}
+        </span>
+      </div>
+      <div className="flex items-center gap-2 text-gray-800">
+        <span className="text-lg">📏</span>
+        <span className="font-semibold">Dernière mensuration :</span>
+        <span className="text-gray-900 font-bold">{derniereMensuDate}</span>
+      </div>
+    </div>
+  </Card>
+</motion.div>
 
         {/* SECTIONS COLLAPSIBLES */}
         {[
@@ -259,26 +256,6 @@ function Dashboard({ utilisateur }) {
             </AnimatePresence>
           </motion.div>
         ))}
-
-        {/* CTA FINAL */}
-        <motion.div className="mt-8 text-center">
-          <h3 className="text-xl font-semibold text-orange-600 mb-2">Bravo ! 🎉</h3>
-          <p className="text-gray-700 mb-4">Continue sur ta lancée — découvre ton menu ou tes recettes !</p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <a
-              href="/recettes"
-              className="bg-orange-500 text-white font-medium px-6 py-3 rounded-lg hover:bg-orange-600 transition"
-            >
-              🎂 Recettes
-            </a>
-            <a
-              href="/menu"
-              className="bg-gray-900 text-white font-medium px-6 py-3 rounded-lg hover:bg-black transition"
-            >
-              🍽️ Menu personnalisé
-            </a>
-          </div>
-        </motion.div>
       </motion.main>
     </div>
   );

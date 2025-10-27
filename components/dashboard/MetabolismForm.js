@@ -220,32 +220,25 @@ export default function MetabolismForm({
       )}
 
       {/* Actions */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <button
-          type="submit"
-          disabled={!isComplete || saving}
-          className={`inline-flex w-full sm:w-auto items-center justify-center rounded-xl px-5 py-2 font-semibold text-white transition
-            ${!isComplete || saving ? "bg-orange-300 cursor-not-allowed" : "bg-orange-500 hover:brightness-110"}
-          `}
-        >
-          {saving ? "Calcul en cours…" : "Calculer mes besoins"}
-        </button>
-        {/* Affichage résultat sur desktop aligné à droite */}
-        {metabolisme && (
-          <div className="flex-1 flex items-center justify-center sm:justify-start rounded-xl border border-orange-200 bg-orange-50 px-4 py-2">
-            <span className="text-sm text-slate-700">🎯 Vos besoins&nbsp;:</span>
-            <strong className="ml-2 text-xl text-orange-600">{metabolisme} kcal</strong>
-          </div>
-        )}
-      </div>
+<div className="flex flex-col sm:flex-row gap-3">
+  <button
+    type="submit"
+    disabled={!isComplete || saving}
+    className={`inline-flex w-full sm:w-auto items-center justify-center rounded-xl px-5 py-2 font-semibold text-white transition
+      ${!isComplete || saving ? "bg-orange-300 cursor-not-allowed" : "bg-orange-500 hover:brightness-110"}
+    `}
+  >
+    {saving ? "Calcul en cours…" : "Calculer mes besoins"}
+  </button>
 
-      {/* Résultat sur mobile si le bloc d’au-dessus passe en dessous */}
-      {!metabolisme ? null : (
-        <div className="sm:hidden rounded-xl border border-orange-200 bg-orange-50 px-4 py-2">
-          <span className="text-sm text-slate-700">🎯 Vos besoins&nbsp;:</span>
-          <strong className="ml-2 text-xl text-orange-600">{metabolisme} kcal</strong>
-        </div>
-      )}
+  {metabolisme && (
+    <div className="flex-1 flex items-center justify-center sm:justify-start rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 mt-2 sm:mt-0">
+      <span className="text-sm text-slate-700">🎯 Vos besoins&nbsp;:</span>
+      <strong className="ml-2 text-xl text-orange-600">{metabolisme} kcal</strong>
+    </div>
+  )}
+</div>
+
     </form>
   );
 }
