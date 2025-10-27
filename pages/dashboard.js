@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useSession, getSession } from "next-auth/react";
 import dynamic from "next/dynamic";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "../components/Navbar";
 import Card from "../components/dashboard/Card";
 import UserHeader from "../components/dashboard/UserHeader";
@@ -24,6 +24,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 const Line = dynamic(() => import("react-chartjs-2").then((m) => m.Line), { ssr: false });
@@ -32,11 +33,16 @@ const Confetti = dynamic(() => import("react-confetti"), { ssr: false });
 function Dashboard({ utilisateur }) {
   const { data: session, status } = useSession();
   const [poidsList, setPoidsList] = useState(utilisateur.historiquePoids);
-  const [metabolismeCible, setMetabolismeCible] = useState(
-    utilisateur.metabolismeCible ?? ""
-  );
+  const [metabolismeCible, setMetabolismeCible] = useState(utilisateur.metabolismeCible ?? "");
   const [mensuList, setMensuList] = useState(utilisateur.mensurations);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [openSections, setOpenSections] = useState({
+    poids: true,
+    metabolisme: true,
+    graph: true,
+    mensu: false,
+    ajouter: false,
+  });
 
   useEffect(() => {
     if (mensuList.length > utilisateur.mensurations.length) {
@@ -49,12 +55,12 @@ function Dashboard({ utilisateur }) {
   if (status === "loading") return <p className="p-8">Chargement…</p>;
   if (!session) return <p className="p-8">Non autorisé</p>;
 
-  // Poids le plus récent par date, en ignorant les entrées invalides
+  // Poids le plus récent
   const dernierPoids = (() => {
     const valides = (poidsList || []).filter(
       (e) => e?.date && !isNaN(new Date(e.date)) && Number.isFinite(Number(e?.poids))
     );
-    if (!valides.length) return 0;
+    if (!valides.length) return null;
     const last = [...valides].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
     return Number(last.poids);
   })();
@@ -68,7 +74,6 @@ function Dashboard({ utilisateur }) {
     const nPoids = Number(poids);
     if (!Number.isFinite(nPoids) || nPoids <= 0) return;
 
-    // Ajout optimiste
     const temp = { id: `tmp-${Date.now()}`, poids: nPoids, date: new Date().toISOString() };
     setPoidsList((p) => [...p, temp]);
 
@@ -89,7 +94,7 @@ function Dashboard({ utilisateur }) {
       return safe;
     } catch (e) {
       setPoidsList((p) => p.filter((e) => e.id !== temp.id));
-      throw e;
+      console.error(e);
     }
   };
 
@@ -138,146 +143,141 @@ function Dashboard({ utilisateur }) {
     }
   };
 
-  // Animations
+  const toggleSection = (key) => {
+    setOpenSections((s) => ({ ...s, [key]: !s[key] }));
+  };
+
   const container = {
     hidden: { opacity: 0, y: 12 },
-    show: { opacity: 1, y: 0, transition: { staggerChildren: 0.06, duration: 0.35 } },
+    show: { opacity: 1, y: 0, transition: { staggerChildren: 0.05, duration: 0.35 } },
   };
-  const item = { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } };
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-b from-orange-50/40 via-white to-white">
+    <div className="relative min-h-screen bg-gradient-to-b from-orange-50/70 via-white to-white">
       {showConfetti && <Confetti recycle={false} numberOfPieces={150} />}
-
       <Navbar />
 
       <motion.main
         variants={container}
         initial="hidden"
         animate="show"
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+        className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
       >
-        {/* Header de page */}
-        <motion.div variants={item} className="mb-6">
-          <Card variant="glass" className="border-white/50">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
-                  Bonjour, {utilisateur.nom ?? ""} 👋
-                </h1>
-                <p className="text-slate-600 mt-1">
-                  Continue sur ta lancée — mets à jour ton poids et suis tes progrès.
-                </p>
-              </div>
-              <div className="flex gap-3">
-                <a
-                  href="/menu"
-                  className="inline-flex items-center rounded-xl bg-orange-500 text-white px-4 py-2 font-semibold hover:brightness-110 transition"
-                >
-                  Menu personnalisé
-                </a>
-                <a
-                  href="/recettes"
-                  className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-4 py-2 font-semibold hover:bg-gray-50 transition"
-                >
-                  Recettes
-                </a>
-              </div>
-            </div>
-          </Card>
+        {/* HEADER */}
+        <motion.div className="bg-gradient-to-br from-orange-100 to-orange-50 rounded-3xl p-6 mb-8 shadow-sm">
+          <h1 className="text-2xl font-extrabold text-gray-900 mb-2">
+            Bonjour, {utilisateur.nom ?? "Coach"} 👋
+          </h1>
+
+          {dernierPoids ? (
+            <p className="text-gray-700 mb-4">
+              Continue sur ta lancée — ton poids actuel est de{" "}
+              <span className="font-semibold text-orange-600">{dernierPoids} kg</span> ⚖️
+            </p>
+          ) : (
+            <p className="text-gray-700 mb-4">
+              Ajoute ton premier poids pour suivre ta progression 👇
+            </p>
+          )}
+
+          <div className="mt-4 flex gap-3">
+            <a
+              href="/menu"
+              className="flex-1 inline-flex justify-center rounded-xl bg-orange-500 text-white px-4 py-2 font-semibold hover:brightness-110 transition"
+            >
+              🍽️ Menu personnalisé
+            </a>
+            <a
+              href="/recettes"
+              className="flex-1 inline-flex justify-center rounded-xl border border-orange-200 bg-white text-gray-800 px-4 py-2 font-semibold hover:bg-orange-50 transition"
+            >
+              🎂 Recettes
+            </a>
+          </div>
         </motion.div>
 
-        {/* Stat cards */}
-        <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <Card title="Poids actuel" icon="⚖️" className="bg-white">
-            <p className="text-3xl font-extrabold text-slate-900">{dernierPoids} kg</p>
+        {/* STATS */}
+        <motion.div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <Card title="Poids actuel" icon="⚖️" className="bg-white/90 shadow-sm">
+            <p className="text-3xl font-extrabold text-slate-900">
+              {dernierPoids ? `${dernierPoids} kg` : "—"}
+            </p>
           </Card>
-          <Card title="Métabolisme cible" icon="🔥" className="bg-white">
+          <Card title="Métabolisme cible" icon="🔥" className="bg-white/90 shadow-sm">
             <p className="text-3xl font-extrabold text-slate-900">
               {metabolismeCible ? `${metabolismeCible} kcal/j` : "—"}
             </p>
           </Card>
-          <Card title="Dernière mensuration" icon="📏" className="bg-white">
+          <Card title="Dernière mensuration" icon="📏" className="bg-white/90 shadow-sm">
             <p className="text-3xl font-extrabold text-slate-900">{derniereMensuDate}</p>
           </Card>
         </motion.div>
 
-        {/* Grille principale */}
-        <motion.div variants={container} className="grid grid-cols-12 gap-6" initial="hidden" animate="show">
-          {/* Profil (compact) */}
-          <motion.div variants={item} className="col-span-12 lg:col-span-6">
-            <Card title="Profil" icon="👤">
-              <UserHeader utilisateur={utilisateur} variant="compact" />
-            </Card>
-          </motion.div>
-
-          {/* Mise à jour du poids */}
-          <motion.div variants={item} className="col-span-12 lg:col-span-6">
-            <Card title="Mise à jour du poids" icon="➕">
-              <WeightTracker
-                historiquePoids={poidsList}
-                onAdd={handleAddWeight}
-                onDelete={handleDeleteWeight}
-              />
-            </Card>
-          </motion.div>
-
-          {/* Métabolisme */}
-          <motion.div variants={item} className="col-span-12">
-            <Card title="Calcul de ton métabolisme" icon="🧠" variant="subtle">
-              <MetabolismForm
-                utilisateur={utilisateur}
-                poidsActuel={dernierPoids}
-                metabolismeInit={metabolismeCible}
-                onSave={handleSaveMetabo}
-              />
-            </Card>
-          </motion.div>
-
-          {/* Graphique */}
-          <motion.div variants={item} className="col-span-12 lg:col-span-6">
-            <Card title="Évolution du poids" icon="📈">
+        {/* SECTIONS COLLAPSIBLES */}
+        {[
+          { key: "poids", title: "Mise à jour du poids", icon: "➕", content: (
+              <WeightTracker historiquePoids={poidsList} onAdd={handleAddWeight} onDelete={handleDeleteWeight} />
+            )
+          },
+          { key: "metabolisme", title: "Calcul de ton métabolisme", icon: "🧠", content: (
+              <MetabolismForm utilisateur={utilisateur} poidsActuel={dernierPoids} metabolismeInit={metabolismeCible} onSave={handleSaveMetabo} />
+            )
+          },
+          { key: "graph", title: "Évolution du poids", icon: "📈", content: (
               <WeightChart historiquePoids={poidsList} ChartComponent={Line} />
-            </Card>
-          </motion.div>
-
-          {/* Historique mensurations */}
-          <motion.div variants={item} className="col-span-12 lg:col-span-6">
-            <Card title="Historique mensurations" icon="🗂️">
+            )
+          },
+          { key: "mensu", title: "Historique mensurations", icon: "🗂️", content: (
               <MeasurementsHistory mensurations={mensuList} onDelete={handleDeleteMensu} />
-            </Card>
-          </motion.div>
-
-          {/* Ajouter mensuration */}
-          <motion.div variants={item} className="col-span-12">
-            <Card title="Ajouter une mensuration" icon="✍️">
+            )
+          },
+          { key: "ajouter", title: "Ajouter une mensuration", icon: "✍️", content: (
               <MeasurementsForm onSave={handleAddMensu} />
-            </Card>
+            )
+          },
+        ].map(({ key, title, icon, content }) => (
+          <motion.div key={key} className="mb-5">
+            <button
+              onClick={() => toggleSection(key)}
+              className="w-full flex justify-between items-center text-left text-lg font-bold text-gray-800 bg-white rounded-2xl px-5 py-4 shadow-sm hover:bg-orange-50 transition"
+            >
+              <span>{icon} {title}</span>
+              <span className="text-orange-500 text-xl">{openSections[key] ? "−" : "+"}</span>
+            </button>
+            <AnimatePresence>
+              {openSections[key] && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.35 }}
+                  className="overflow-hidden mt-3"
+                >
+                  <Card className="bg-white shadow-sm">{content}</Card>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
+        ))}
 
-          {/* CTA */}
-          <motion.div variants={item} className="col-span-12">
-            <div className="rounded-2xl bg-orange-50 border border-orange-200 p-6 text-center shadow-sm">
-              <h3 className="text-xl font-semibold text-orange-600 mb-2">Bravo ! 🎉</h3>
-              <p className="text-gray-700 mb-4">
-                Vous avez ajouté vos informations. Découvrez maintenant :
-              </p>
-              <div className="flex flex-col sm:flex-row justify-center gap-4">
-                <a
-                  href="/recettes"
-                  className="bg-orange-500 text-white font-medium px-6 py-3 rounded-lg hover:bg-orange-600 transition inline-block"
-                >
-                  🎂 Recettes
-                </a>
-                <a
-                  href="/menu"
-                  className="bg-gray-900 text-white font-medium px-6 py-3 rounded-lg hover:bg-black transition inline-block"
-                >
-                  🍽️ Menu personnalisé
-                </a>
-              </div>
-            </div>
-          </motion.div>
+        {/* CTA FINAL */}
+        <motion.div className="mt-8 text-center">
+          <h3 className="text-xl font-semibold text-orange-600 mb-2">Bravo ! 🎉</h3>
+          <p className="text-gray-700 mb-4">Continue sur ta lancée — découvre ton menu ou tes recettes !</p>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <a
+              href="/recettes"
+              className="bg-orange-500 text-white font-medium px-6 py-3 rounded-lg hover:bg-orange-600 transition"
+            >
+              🎂 Recettes
+            </a>
+            <a
+              href="/menu"
+              className="bg-gray-900 text-white font-medium px-6 py-3 rounded-lg hover:bg-black transition"
+            >
+              🍽️ Menu personnalisé
+            </a>
+          </div>
         </motion.div>
       </motion.main>
     </div>
@@ -300,7 +300,6 @@ export async function getServerSideProps(context) {
     age: raw.age,
     taille: raw.taille,
     poids: raw.poids,
-    objectifPoids: raw.objectifPoids,
     metabolismeCible: raw.metabolismeCible,
     sexe: raw.sexe,
     activite: raw.activite,

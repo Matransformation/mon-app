@@ -25,8 +25,8 @@ export default function Navbar() {
   const { data: session } = useSession();
   const [unreadCount, setUnreadCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
 
-  // Charger nb notifications non lues
   useEffect(() => {
     if (!session?.user?.id) return;
     const fetchCount = async () => {
@@ -42,12 +42,21 @@ export default function Navbar() {
     return () => clearInterval(interval);
   }, [session]);
 
+  const toggleMenu = () => {
+    if (menuOpen) {
+      setMenuVisible(false);
+      setTimeout(() => setMenuOpen(false), 250);
+    } else {
+      setMenuOpen(true);
+      setTimeout(() => setMenuVisible(true), 10);
+    }
+  };
+
   return (
     <>
       {/* --- HEADER --- */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm w-full print:hidden">
         <div className="flex justify-between items-center px-6 py-3">
-          {/* Logo */}
           <Link href="/">
             <Image
               src="/matransformation.png"
@@ -59,13 +68,12 @@ export default function Navbar() {
             />
           </Link>
 
-          {/* Notifications + Profil */}
           {session && (
             <div className="flex items-center gap-4">
               <Link href="/notifications" className="relative text-gray-700 hover:text-orange-500">
-                <Bell className="h-6 w-6" />
+                <Bell className="h-5 w-5" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] w-3.5 h-3.5 rounded-full flex items-center justify-center">
                     {unreadCount}
                   </span>
                 )}
@@ -73,7 +81,7 @@ export default function Navbar() {
 
               <Link
                 href="/mon-compte"
-                className="bg-orange-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-semibold"
+                className="bg-orange-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm"
               >
                 {session?.user?.name?.[0]?.toUpperCase() || "U"}
               </Link>
@@ -82,118 +90,147 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* --- MENU FIXE BAS (TOUS ÉCRANS) --- */}
+      {/* --- MENU BAS FIXE --- */}
       {session && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-[0_-2px_6px_rgba(0,0,0,0.1)]">
-          <div className="flex justify-around items-center h-20 relative">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-3px_8px_rgba(0,0,0,0.08)] h-[86px]">
+          <div className="flex justify-around items-center h-full relative text-xs px-2">
             {/* Dashboard */}
             <Link
               href="/dashboard"
-              className={`flex flex-col items-center text-sm ${
+              className={`flex flex-col items-center ${
                 router.pathname === "/dashboard" ? "text-orange-500" : "text-gray-500"
               }`}
             >
-              <Home className="h-6 w-6" />
-              <span className="mt-2">Dashboard</span>
+              <Home className="h-5 w-5 mb-[2px]" />
+              <span className="text-[11px] font-medium">Accueil</span>
             </Link>
 
             {/* Nutrition */}
             <Link
               href="/nutrition"
-              className={`flex flex-col items-center text-sm ${
+              className={`flex flex-col items-center ${
                 router.pathname.startsWith("/nutrition") ? "text-orange-500" : "text-gray-500"
               }`}
             >
-              <Utensils className="h-6 w-6" />
-              <span className="mt-2">Nutrition</span>
+              <Utensils className="h-5 w-5 mb-[2px]" />
+              <span className="text-[11px] font-medium">Nutrition</span>
             </Link>
 
-            {/* Bouton central + */}
-            <button
-              onClick={() => setMenuOpen((o) => !o)}
-              className={`absolute -top-11 left-1/2 -translate-x-1/2 bg-orange-500 hover:bg-orange-600 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-xl border-4 border-white transition-all duration-200 ${
-                !menuOpen ? "animate-glow" : ""
-              }`}
-            >
-              {menuOpen ? <X size={32} /> : <Plus size={32} />}
-            </button>
+            {/* Bouton central + (centré) */}
+            <div className="relative flex flex-col items-center -translate-y-[2px]">
+              <button
+                onClick={toggleMenu}
+                className={`rounded-full w-[58px] h-[58px] flex items-center justify-center shadow-lg border-[3px] border-white transition-all duration-300 ${
+                  menuOpen
+                    ? "bg-gradient-to-br from-orange-600 to-orange-400 text-white"
+                    : "bg-orange-500 hover:bg-orange-600 text-white animate-glow"
+                }`}
+              >
+                {menuOpen ? <X size={26} /> : <Plus size={28} />}
+              </button>
+            </div>
 
             {/* Fitness */}
             <Link
               href="/training"
-              className={`flex flex-col items-center text-sm ${
+              className={`flex flex-col items-center ${
                 router.pathname.startsWith("/training") ? "text-orange-500" : "text-gray-500"
               }`}
             >
-              <Dumbbell className="h-6 w-6" />
-              <span className="mt-2">Fitness</span>
+              <Dumbbell className="h-5 w-5 mb-[2px]" />
+              <span className="text-[11px] font-medium">Fitness</span>
             </Link>
 
             {/* Profil */}
             <Link
               href="/mon-compte"
-              className={`flex flex-col items-center text-sm ${
+              className={`flex flex-col items-center ${
                 router.pathname.startsWith("/mon-compte") ? "text-orange-500" : "text-gray-500"
               }`}
             >
-              <User className="h-6 w-6" />
-              <span className="mt-2">Profil</span>
+              <User className="h-5 w-5 mb-[2px]" />
+              <span className="text-[11px] font-medium">Profil</span>
             </Link>
 
-            {/* --- MENU FLOTTANT + --- */}
+            {/* --- MENU FLOTTANT --- */}
             {menuOpen && (
-              <div className="absolute bottom-24 left-1/2 -translate-x-1/2 bg-white border border-gray-200 rounded-xl shadow-xl py-3 px-4 flex flex-col gap-2 w-48 animate-fade-in">
-                <Link
-                  href="/social"
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-2 text-sm text-gray-700 hover:text-orange-500"
+              <>
+                {/* Fond flouté */}
+                <div
+                  onClick={toggleMenu}
+                  className={`fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-opacity duration-300 ${
+                    menuVisible ? "opacity-100" : "opacity-0"
+                  }`}
+                ></div>
+
+                {/* Menu flottant */}
+                <div
+                  className={`absolute left-1/2 -translate-x-1/2 bg-white border border-gray-200 rounded-2xl shadow-xl py-4 px-5 flex flex-col gap-3 w-52 z-50 transform transition-all duration-300 ${
+                    menuVisible
+                      ? "bottom-[110px] opacity-100 translate-y-0"
+                      : "bottom-[90px] opacity-0 translate-y-4"
+                  }`}
                 >
-                  <Users className="h-4 w-4 text-orange-500" />
-                  Communauté
-                </Link>
-                <Link
-                  href="/user-points"
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-2 text-sm text-gray-700 hover:text-orange-500"
-                >
-                  <Gift className="h-4 w-4 text-orange-500" />
-                  Récompenses
-                </Link>
-                <Link
-                  href="/videos"
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-2 text-sm text-gray-700 hover:text-orange-500"
-                >
-                  <Video className="h-4 w-4 text-orange-500" />
-                  Tutoriels
-                </Link>
-                <a
-                  href="https://wa.me/33658881560?text=Bonjour%20Cl%C3%A9mence%20et%20Romain%2C%20j%27ai%20une%20question%20sur%20votre%20programme"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-2 text-sm text-orange-500 hover:text-orange-600 font-medium"
-                >
-                  <MessageCircle className="h-4 w-4 text-orange-500" />
-                  Contact
-                </a>
-                <button
-                  onClick={() => {
-                    setMenuOpen(false);
-                    signOut();
-                  }}
-                  className="flex items-center gap-2 text-sm text-red-600 hover:text-red-700"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Déconnexion
-                </button>
-              </div>
+                  {[
+                    { href: "/social", icon: <Users className="h-4 w-4 text-orange-500" />, label: "Communauté" },
+                    { href: "/user-points", icon: <Gift className="h-4 w-4 text-orange-500" />, label: "Récompenses" },
+                    { href: "/videos", icon: <Video className="h-4 w-4 text-orange-500" />, label: "Tutoriels" },
+                  ].map((item, i) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-2 text-sm text-gray-700 hover:text-orange-500 transition-all duration-300"
+                      style={{
+                        transitionDelay: `${i * 60}ms`,
+                        opacity: menuVisible ? 1 : 0,
+                        transform: menuVisible ? "translateY(0)" : "translateY(8px)",
+                      }}
+                    >
+                      {item.icon}
+                      {item.label}
+                    </Link>
+                  ))}
+
+                  <a
+                    href="https://wa.me/33658881560?text=Bonjour%20Cl%C3%A9mence%20et%20Romain%2C%20j%27ai%20une%20question%20sur%20votre%20programme"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-2 text-sm text-orange-500 hover:text-orange-600 font-medium transition"
+                    style={{
+                      transitionDelay: `180ms`,
+                      opacity: menuVisible ? 1 : 0,
+                      transform: menuVisible ? "translateY(0)" : "translateY(8px)",
+                    }}
+                  >
+                    <MessageCircle className="h-4 w-4 text-orange-500" />
+                    Contact
+                  </a>
+
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      signOut();
+                    }}
+                    className="flex items-center gap-2 text-sm text-red-600 hover:text-red-700 transition"
+                    style={{
+                      transitionDelay: `240ms`,
+                      opacity: menuVisible ? 1 : 0,
+                      transform: menuVisible ? "translateY(0)" : "translateY(8px)",
+                    }}
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Déconnexion
+                  </button>
+                </div>
+              </>
             )}
           </div>
         </div>
       )}
 
-      {/* Animation glow optionnelle */}
+      {/* --- Animations --- */}
       <style jsx>{`
         @keyframes glow {
           0% {
