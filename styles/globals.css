@@ -18,3 +18,20 @@
   }
   
   
+  @keyframes pulse-glow-orange {
+    0% {
+      box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.6); /* orange-500 */
+    }
+    70% {
+      box-shadow: 0 0 0 12px rgba(249, 115, 22, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+    }
+  }
+  
+  .btn-glow-orange {
+    animation: pulse-glow-orange 2s infinite;
+  }
+  
+  

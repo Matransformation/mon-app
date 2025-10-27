@@ -1,8 +1,8 @@
-// pages/mon-compte.js
 import { getSession } from "next-auth/react";
 import { useState, useEffect, useMemo } from "react";
 import Navbar from "../components/Navbar";
 import prisma from "../lib/prisma";
+import { Crown, Settings } from "lucide-react";
 
 export default function MonCompte({ user }) {
   // ----- State
@@ -30,10 +30,9 @@ export default function MonCompte({ user }) {
     setRenewalDate(user.subscriptionEnd);
     setIsSubscribed(!!user.isSubscribed);
     setStripeStatus(user.stripeStatus || "");
-
     setCancelAtPeriodEnd(Boolean(user.cancelAtPeriodEnd));
 
-    // Libellé abonnement depuis les prix publics
+    // Libellé abonnement
     const { stripePriceId } = user;
     if (stripePriceId === process.env.NEXT_PUBLIC_PRICE_MONTHLY) {
       setSubscriptionType("Abonnement Mensuel");
@@ -59,7 +58,6 @@ export default function MonCompte({ user }) {
   const nowTs = useMemo(() => Date.now(), []);
   const trialActive = trialEndsAt ? new Date(trialEndsAt).getTime() > nowTs : false;
   const renewalTs = renewalDate ? new Date(renewalDate).getTime() : 0;
-
   const cancelPending = cancelAtPeriodEnd && renewalTs > nowTs;
   const subscriptionActive =
     isSubscribed && stripeStatus === "active" && !cancelAtPeriodEnd && renewalTs > nowTs;
@@ -149,190 +147,199 @@ export default function MonCompte({ user }) {
   return (
     <>
       <Navbar />
+      <div className="pb-24 bg-gray-50 min-h-screen">
+        {/* ----- HEADER PROFIL ----- */}
+        <div className="bg-white border-b border-gray-100 py-8 px-6 text-center shadow-sm relative">
+          <div className="flex flex-col items-center">
+            <div className="w-20 h-20 rounded-full bg-orange-500 text-white flex items-center justify-center text-2xl font-bold mb-3">
+              {prenom?.[0]?.toUpperCase() || "U"}
+            </div>
+            <h1 className="text-xl font-bold text-gray-900">{prenom || "Utilisateur"}</h1>
+            <p className="text-sm text-gray-600">{email}</p>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-extrabold text-gray-900">Mon compte</h1>
-          <p className="text-gray-600 mt-1">
-            Gérez vos informations, votre mot de passe et votre abonnement.
-          </p>
+            {subscriptionActive ? (
+              <span className="mt-3 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 text-sm font-medium">
+                <Crown size={16} />
+                Membre Premium
+              </span>
+            ) : (
+              <span className="mt-3 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-sm font-medium">
+                Compte gratuit
+              </span>
+            )}
+          </div>
+
+          <div className="absolute top-5 right-5 text-gray-400">
+            <Settings size={22} />
+          </div>
         </div>
 
-        {/* Alertes statut */}
-        {confirmMessage && (
-          <div
-            role="status"
-            className={`mb-6 rounded-xl border px-4 py-3 ${
-              confirmMessage.startsWith("✅")
-                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                : "border-red-200 bg-red-50 text-red-800"
-            }`}
+        {/* ----- CONTENU ----- */}
+        <div className="max-w-6xl mx-auto px-5 py-8 space-y-6">
+          {/* Messages & Alertes */}
+          {confirmMessage && (
+            <div
+              role="status"
+              className={`rounded-xl border px-4 py-3 ${
+                confirmMessage.startsWith("✅")
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                  : "border-red-200 bg-red-50 text-red-800"
+              }`}
+            >
+              {confirmMessage}
+            </div>
+          )}
+
+          {trialActive && !subscriptionActive && !cancelPending && (
+            <div className="rounded-xl border border-orange-200 bg-orange-50 text-orange-800 px-4 py-3">
+              🎁 Période d’essai en cours — se termine le{" "}
+              <strong>{formatDate(trialEndsAt)}</strong>.
+            </div>
+          )}
+
+          {subscriptionActive && (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 px-4 py-3">
+              ✅ Abonnement actif — prochain renouvellement le{" "}
+              <strong>{formatDate(renewalDate)}</strong>.
+            </div>
+          )}
+
+          {cancelPending && (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 text-rose-800 px-4 py-3">
+              ⏳ Résiliation programmée — accès jusqu’au{" "}
+              <strong>{formatDate(renewalDate)}</strong>.
+            </div>
+          )}
+
+          {/* ----- Infos personnelles ----- */}
+          <form
+            onSubmit={handleUpdateUser}
+            className="bg-white rounded-2xl shadow-sm p-5 ring-1 ring-gray-100"
           >
-            {confirmMessage}
-          </div>
-        )}
-
-        {trialActive && !subscriptionActive && !cancelPending && (
-          <div className="mb-6 rounded-xl border border-orange-200 bg-orange-50 text-orange-800 px-4 py-3">
-            🎁 Période d’essai en cours — se termine le{" "}
-            <strong>{formatDate(trialEndsAt)}</strong>.
-          </div>
-        )}
-
-        {subscriptionActive && (
-          <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 px-4 py-3">
-            ✅ Abonnement actif — prochain renouvellement le{" "}
-            <strong>{formatDate(renewalDate)}</strong>.
-          </div>
-        )}
-
-        {cancelPending && (
-          <div className="mb-6 rounded-xl border border-rose-200 bg-rose-50 text-rose-800 px-4 py-3">
-            ⏳ Résiliation programmée — accès jusqu’au{" "}
-            <strong>{formatDate(renewalDate)}</strong>.
-          </div>
-        )}
-
-        {/* Grille 2 colonnes */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Colonne gauche : Infos + Password */}
-          <div className="space-y-6 lg:col-span-2">
-            {/* Infos personnelles */}
-            <form
-              onSubmit={handleUpdateUser}
-              className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-6"
-            >
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Infos personnelles</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <label className="flex flex-col">
-                  <span className="text-sm font-medium text-gray-700 mb-1">Prénom</span>
-                  <input
-                    type="text"
-                    value={prenom}
-                    onChange={(e) => setPrenom(e.target.value)}
-                    className="rounded-md border border-gray-300 p-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
-                    placeholder="Prénom"
-                  />
-                </label>
-                <label className="flex flex-col">
-                  <span className="text-sm font-medium text-gray-700 mb-1">Email</span>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="rounded-md border border-gray-300 p-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
-                    placeholder="Email"
-                  />
-                </label>
-              </div>
-              <div className="mt-4 flex justify-end">
-                <button
-                  type="submit"
-                  disabled={busy}
-                  className="inline-flex items-center justify-center bg-gray-900 text-white px-5 py-2 rounded-lg hover:bg-gray-800 transition disabled:opacity-60"
-                >
-                  {busy ? "Enregistrement…" : "Sauvegarder"}
-                </button>
-              </div>
-            </form>
-
-            {/* Mot de passe */}
-            <form
-              onSubmit={handleChangePassword}
-              className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-6"
-            >
-              <h3 className="text-xl font-bold text-gray-900 mb-4">🔐 Changer le mot de passe</h3>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Informations personnelles</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <label className="flex flex-col">
-                <span className="text-sm font-medium text-gray-700 mb-1">Nouveau mot de passe</span>
+                <span className="text-sm text-gray-600 mb-1">Prénom</span>
                 <input
-                  type="password"
-                  placeholder="********"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="rounded-md border border-gray-300 p-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+                  type="text"
+                  value={prenom}
+                  onChange={(e) => setPrenom(e.target.value)}
+                  className="border rounded-md p-2 text-sm focus:ring-2 focus:ring-orange-400 outline-none"
                 />
               </label>
-              <div className="mt-4 flex justify-end">
-                <button
-                  type="submit"
-                  disabled={busy || !newPassword}
-                  className="inline-flex items-center justify-center bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-60"
-                >
-                  {busy ? "Mise à jour…" : "Mettre à jour"}
-                </button>
-              </div>
-            </form>
-          </div>
+              <label className="flex flex-col">
+                <span className="text-sm text-gray-600 mb-1">Email</span>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="border rounded-md p-2 text-sm focus:ring-2 focus:ring-orange-400 outline-none"
+                />
+              </label>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button
+                type="submit"
+                disabled={busy}
+                className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-lg text-sm font-medium transition disabled:opacity-60"
+              >
+                {busy ? "Enregistrement…" : "Sauvegarder"}
+              </button>
+            </div>
+          </form>
 
-          {/* Colonne droite : Abonnement */}
-          <div className="space-y-6">
-            {/* Carte statut abonnement */}
-            <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-3">Votre abonnement</h2>
+          {/* ----- Mot de passe ----- */}
+          <form
+            onSubmit={handleChangePassword}
+            className="bg-white rounded-2xl shadow-sm p-5 ring-1 ring-gray-100"
+          >
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">🔐 Changer le mot de passe</h3>
+            <label className="flex flex-col">
+              <span className="text-sm text-gray-600 mb-1">Nouveau mot de passe</span>
+              <input
+                type="password"
+                placeholder="********"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="border rounded-md p-2 text-sm focus:ring-2 focus:ring-orange-400 outline-none"
+              />
+            </label>
+            <div className="mt-4 flex justify-end">
+              <button
+                type="submit"
+                disabled={busy || !newPassword}
+                className="bg-gray-900 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition disabled:opacity-60"
+              >
+                {busy ? "Mise à jour…" : "Mettre à jour"}
+              </button>
+            </div>
+          </form>
 
-              <div className="flex flex-wrap items-center gap-2 mb-3">
-                <span className="px-2.5 py-1 rounded-full text-sm bg-gray-100 text-gray-800">
-                  {subscriptionType}
-                </span>
-                <span
-                  className={`px-2.5 py-1 rounded-full text-sm ${
-                    subscriptionActive
-                      ? "bg-emerald-100 text-emerald-800"
-                      : cancelPending
-                      ? "bg-rose-100 text-rose-800"
-                      : "bg-gray-100 text-gray-700"
-                  }`}
-                >
-                  {subscriptionActive
-                    ? "Actif"
+          {/* ----- Abonnement ----- */}
+          <div className="bg-white rounded-2xl shadow-sm p-5 ring-1 ring-gray-100">
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">Mon abonnement</h2>
+
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <span className="px-2.5 py-1 rounded-full text-sm bg-gray-100 text-gray-800">
+                {subscriptionType}
+              </span>
+              <span
+                className={`px-2.5 py-1 rounded-full text-sm ${
+                  subscriptionActive
+                    ? "bg-emerald-100 text-emerald-800"
                     : cancelPending
-                    ? "Résiliation en cours"
-                    : "Inactif"}
+                    ? "bg-rose-100 text-rose-800"
+                    : "bg-gray-100 text-gray-700"
+                }`}
+              >
+                {subscriptionActive
+                  ? "Actif"
+                  : cancelPending
+                  ? "Résiliation en cours"
+                  : "Inactif"}
+              </span>
+              {trialActive && (
+                <span className="px-2.5 py-1 rounded-full text-sm bg-orange-100 text-orange-800">
+                  Essai jusqu’au {formatDate(trialEndsAt)}
                 </span>
-                {trialActive && (
-                  <span className="px-2.5 py-1 rounded-full text-sm bg-orange-100 text-orange-800">
-                    Essai jusqu’au {formatDate(trialEndsAt)}
-                  </span>
-                )}
-              </div>
-
-              <dl className="text-sm text-gray-700 space-y-1">
-                <div className="flex justify-between">
-                  <dt>Statut Stripe</dt>
-                  <dd className="font-medium">{stripeStatus || "—"}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt>Prochain renouvellement</dt>
-                  <dd className="font-medium">{formatDate(renewalDate)}</dd>
-                </div>
-              </dl>
-
-              {/* Actions abonnement */}
-              <div className="mt-4 space-y-2">
-                {subscriptionActive ? (
-                  <button
-                    onClick={handleCancelRenewal}
-                    disabled={cancelBusy}
-                    className="w-full inline-flex items-center justify-center bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition disabled:opacity-60"
-                  >
-                    {cancelBusy ? "Annulation…" : "Annuler le renouvellement"}
-                  </button>
-                ) : cancelPending ? (
-                  <p className="text-sm text-gray-600">
-                    Vous gardez l’accès jusqu’au <strong>{formatDate(renewalDate)}</strong>.
-                  </p>
-                ) : (
-                  <p className="text-sm text-gray-600">
-                    Choisissez une offre ci-dessous pour activer votre accès.
-                  </p>
-                )}
-              </div>
+              )}
             </div>
 
-            {/* Offres (affichées uniquement si non actif et pas de résiliation en cours) */}
+            <dl className="text-sm text-gray-700 space-y-1 mb-3">
+              <div className="flex justify-between">
+                <dt>Statut Stripe</dt>
+                <dd className="font-medium">{stripeStatus || "—"}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt>Prochain renouvellement</dt>
+                <dd className="font-medium">{formatDate(renewalDate)}</dd>
+              </div>
+            </dl>
+
+            {/* Actions */}
+            <div className="mt-4 space-y-2">
+              {subscriptionActive ? (
+                <button
+                  onClick={handleCancelRenewal}
+                  disabled={cancelBusy}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm transition disabled:opacity-60"
+                >
+                  {cancelBusy ? "Annulation…" : "Annuler le renouvellement"}
+                </button>
+              ) : cancelPending ? (
+                <p className="text-sm text-gray-600">
+                  Vous gardez l’accès jusqu’au <strong>{formatDate(renewalDate)}</strong>.
+                </p>
+              ) : (
+                <p className="text-sm text-gray-600">
+                  Choisissez une offre ci-dessous pour activer votre accès 👇
+                </p>
+              )}
+            </div>
+
+            {/* Offres */}
             {!subscriptionActive && !cancelPending && (
-              <div className="space-y-4">
+              <div className="grid sm:grid-cols-2 gap-4 mt-4">
                 <OfferCard
                   title="Mensuel"
                   price="14,99 € / mois"
@@ -343,7 +350,7 @@ export default function MonCompte({ user }) {
                 <OfferCard
                   title="Annuel"
                   price="89,90 € / an"
-                  desc="Accédez à tout et économisez ~50%."
+                  desc="Économisez ~50%."
                   onClick={() => handleSubscribe("price_annual")}
                   busy={busy}
                   highlight
@@ -364,29 +371,20 @@ export default function MonCompte({ user }) {
   );
 }
 
-// Petite carte réutilisable pour les offres
 function OfferCard({ title, price, desc, onClick, busy, highlight = false }) {
   return (
     <div
-      className={`rounded-2xl shadow-sm ring-1 p-5 ${
-        highlight
-          ? "bg-orange-50 ring-orange-200"
-          : "bg-white ring-gray-100"
+      className={`rounded-2xl shadow-sm ring-1 p-4 text-sm ${
+        highlight ? "bg-orange-50 ring-orange-200" : "bg-white ring-gray-100"
       }`}
     >
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h3 className="text-lg font-bold text-gray-900">{title}</h3>
-          <p className="text-sm text-gray-600 mt-1">{desc}</p>
-        </div>
-        <div className="text-right">
-          <div className="text-xl font-extrabold text-gray-900">{price}</div>
-        </div>
-      </div>
+      <h3 className="font-bold text-gray-900">{title}</h3>
+      <p className="text-gray-600 mt-1">{desc}</p>
+      <div className="text-lg font-bold mt-2">{price}</div>
       <button
         onClick={onClick}
         disabled={busy}
-        className={`mt-4 w-full inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition disabled:opacity-60 ${
+        className={`mt-3 w-full py-2 rounded-lg font-medium text-sm transition disabled:opacity-60 ${
           highlight
             ? "bg-orange-500 hover:bg-orange-600 text-white"
             : "bg-gray-900 hover:bg-gray-800 text-white"
@@ -401,9 +399,7 @@ function OfferCard({ title, price, desc, onClick, busy, highlight = false }) {
 export async function getServerSideProps(context) {
   const session = await getSession(context);
   if (!session?.user?.email) {
-    return {
-      redirect: { destination: "/auth/signin", permanent: false },
-    };
+    return { redirect: { destination: "/auth/signin", permanent: false } };
   }
 
   const u = await prisma.user.findUnique({

@@ -1,20 +1,21 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { signOut } from "next-auth/react";
 import Image from "next/image";
 import {
-  Menu as MenuIcon,
-  X,
   Bell,
   Home,
   Dumbbell,
   Utensils,
   User,
-  Users,
-  Carrot,
-  Video,
   Gift,
+  Video,
+  Plus,
+  X,
+  LogOut,
+  Users,
+  MessageCircle,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import axios from "axios";
@@ -22,36 +23,15 @@ import axios from "axios";
 export default function Navbar() {
   const router = useRouter();
   const { data: session } = useSession();
-
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  // --- Hover intent pour sous-menus desktop
-  const closeTimer = useRef(null);
-  const clearCloseTimer = () => {
-    if (closeTimer.current) {
-      clearTimeout(closeTimer.current);
-      closeTimer.current = null;
-    }
-  };
-  const openMenu = (label) => {
-    clearCloseTimer();
-    setOpenDropdown(label);
-  };
-  const scheduleClose = () => {
-    clearCloseTimer();
-    closeTimer.current = setTimeout(() => setOpenDropdown(null), 220);
-  };
-
-  // Charger nb de notifications non lues
+  // Charger nb notifications non lues
   useEffect(() => {
     if (!session?.user?.id) return;
     const fetchCount = async () => {
       try {
-        const res = await axios.get(
-          `/api/notifications/unreadCount?userId=${session.user.id}`
-        );
+        const res = await axios.get(`/api/notifications/unreadCount?userId=${session.user.id}`);
         setUnreadCount(res.data.count);
       } catch (err) {
         console.error("Erreur chargement unreadCount:", err);
@@ -62,286 +42,174 @@ export default function Navbar() {
     return () => clearInterval(interval);
   }, [session]);
 
-  // Fermer le menu mobile quand on change de page
-  useEffect(() => {
-    const handleRoute = () => setMenuOpen(false);
-    router.events?.on("routeChangeComplete", handleRoute);
-    return () => router.events?.off("routeChangeComplete", handleRoute);
-  }, [router.events]);
-
-  // Liens
-  const NAV_LINKS = [
-    { href: "/dashboard", label: "Dashboard", Icon: Home },
-    // ➕ Nouveau lien Coaching sport (top-level)
-    { href: "/coaching-sport", label: "Coaching sport", Icon: Dumbbell },
-    { href: "/training", label: "Fitness", Icon: Dumbbell },
-    {
-      label: "Nutrition",
-      Icon: Utensils,
-      children: [
-        { href: "/menu", label: "Menus" },
-        { href: "/liste-courses", label: "Liste de courses" },
-        { href: "/mes-favoris", label: "Mes favoris" },
-        { href: "/recettes", label: "Recettes" },
-      ],
-    },
-    { href: "/mon-compte", label: "Mon compte", Icon: User },
-    { href: "/social", label: "Communauté", Icon: Users },
-    {
-      label: "Récompenses",
-      Icon: Gift,
-      children: [
-        { href: "/user-points", label: "Mes Points Carotte", Icon: Carrot },
-        { href: "/roulette", label: "Gagne ton cadeau", Icon: Gift },
-      ],
-    },
-    // CTA
-    { href: "/videos", label: "Tutoriels vidéos", Icon: Video, cta: true },
-  ];
-
-  // Lien simple
-  const renderLink = ({ href, label, Icon, cta }) => {
-    const isActive = router.pathname === href;
-    if (cta) {
-      return (
-        <Link
-          key={href}
-          href={href}
-          className="flex items-center gap-2 text-sm font-medium bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded"
-        >
-          <Icon className="h-4 w-4" />
-          <span>{label}</span>
-        </Link>
-      );
-    }
-    const base = "flex items-center gap-2 text-sm font-medium px-2 py-1";
-    const activeClass = isActive
-      ? "text-green-700"
-      : "text-gray-700 hover:text-green-700";
-    return (
-      <Link key={href} href={href} className={`${base} ${activeClass}`}>
-        <Icon className="h-4 w-4" />
-        <span>{label}</span>
-      </Link>
-    );
-  };
-
   return (
-    <nav
-      className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm w-full print:hidden"
-      role="navigation"
-      aria-label="Menu principal"
-    >
-      {/* Barre supérieure */}
-      <div className="flex justify-between items-center px-4 md:px-8 py-3">
-        {/* Logo + nav desktop */}
-        <div className="flex items-center gap-6">
+    <>
+      {/* --- HEADER --- */}
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm w-full print:hidden">
+        <div className="flex justify-between items-center px-6 py-3">
+          {/* Logo */}
           <Link href="/">
             <Image
               src="/matransformation.png"
               alt="Logo MaTransformation"
-              width={160}
-              height={40}
+              width={120}
+              height={30}
               className="h-auto w-auto"
               priority
             />
           </Link>
 
+          {/* Notifications + Profil */}
           {session && (
-            <div className="hidden md:flex gap-6">
-              {NAV_LINKS.map((item) => {
-                if (item.children) {
-                  return (
-                    <div
-                      key={item.label}
-                      className="relative"
-                      onMouseEnter={() => openMenu(item.label)}
-                      onMouseLeave={scheduleClose}
-                    >
-                      {/* Parent */}
-                      <button
-                        className="flex items-center gap-2 px-2 py-1 text-sm font-medium text-gray-700 hover:text-green-700"
-                        aria-haspopup="true"
-                        aria-expanded={openDropdown === item.label}
-                        onFocus={() => openMenu(item.label)}
-                        onBlur={scheduleClose}
-                        onKeyDown={(e) => {
-                          if (e.key === "Escape") setOpenDropdown(null);
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            openDropdown === item.label
-                              ? setOpenDropdown(null)
-                              : openMenu(item.label);
-                          }
-                        }}
-                      >
-                        <item.Icon className="h-4 w-4" />
-                        {item.label}
-                        <svg className="w-3 h-3 mt-1" viewBox="0 0 10 6" aria-hidden="true">
-                          <path d="M0 0 L5 6 L10 0" fill="currentColor" />
-                        </svg>
-                      </button>
+            <div className="flex items-center gap-4">
+              <Link href="/notifications" className="relative text-gray-700 hover:text-orange-500">
+                <Bell className="h-6 w-6" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">
+                    {unreadCount}
+                  </span>
+                )}
+              </Link>
 
-                      {/* Sous-menu */}
-                      {openDropdown === item.label && (
-                        <div
-                          className="absolute left-0 top-full mt-1 w-56 bg-white border border-gray-200 shadow-lg rounded-md py-2 z-50"
-                          onMouseEnter={() => openMenu(item.label)}
-                          onMouseLeave={scheduleClose}
-                        >
-                          {item.children.map((child) => (
-                            <Link
-                              href={child.href}
-                              key={child.href}
-                              className={`flex items-center gap-2 px-4 py-2 text-sm ${
-                                router.pathname === child.href
-                                  ? "text-green-700"
-                                  : "text-gray-700 hover:bg-gray-50"
-                              }`}
-                              onClick={() => setOpenDropdown(null)}
-                            >
-                              {child.Icon && <child.Icon className="h-4 w-4" />}
-                              {child.label}
-                            </Link>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                }
-                return renderLink(item);
-              })}
+              <Link
+                href="/mon-compte"
+                className="bg-orange-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-semibold"
+              >
+                {session?.user?.name?.[0]?.toUpperCase() || "U"}
+              </Link>
             </div>
           )}
         </div>
+      </header>
 
-        {/* Notifications + session (desktop) */}
-        <div className="hidden md:flex items-center gap-4">
-          {session && (
+      {/* --- MENU FIXE BAS (TOUS ÉCRANS) --- */}
+      {session && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-[0_-2px_6px_rgba(0,0,0,0.1)]">
+          <div className="flex justify-around items-center h-20 relative">
+            {/* Dashboard */}
             <Link
-              href="/notifications"
-              className="relative flex items-center text-gray-700 hover:text-green-700"
+              href="/dashboard"
+              className={`flex flex-col items-center text-sm ${
+                router.pathname === "/dashboard" ? "text-orange-500" : "text-gray-500"
+              }`}
             >
-              <Bell className="h-5 w-5" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                  {unreadCount}
-                </span>
-              )}
+              <Home className="h-6 w-6" />
+              <span className="mt-2">Dashboard</span>
             </Link>
-          )}
-          {session ? (
-            <button
-              onClick={() => signOut()}
-              className="text-sm bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
-            >
-              Se déconnecter
-            </button>
-          ) : (
-            <>
-              <button
-                onClick={() => router.push("/login")}
-                className="text-sm bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
-              >
-                Se connecter
-              </button>
-              <button
-                onClick={() => router.push("/register")}
-                className="text-sm bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded"
-              >
-                Créer un compte
-              </button>
-            </>
-          )}
-        </div>
 
-        {/* Mobile : hamburger + notif */}
-        <div className="md:hidden flex items-center gap-3">
-          {session && (
-            <Link href="/notifications" className="relative text-gray-700">
-              <Bell className="h-5 w-5" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">
-                  {unreadCount}
-                </span>
-              )}
+            {/* Nutrition */}
+            <Link
+              href="/nutrition"
+              className={`flex flex-col items-center text-sm ${
+                router.pathname.startsWith("/nutrition") ? "text-orange-500" : "text-gray-500"
+              }`}
+            >
+              <Utensils className="h-6 w-6" />
+              <span className="mt-2">Nutrition</span>
             </Link>
-          )}
-          {session && <span className="text-sm text-gray-700">Menu</span>}
-          {session ? (
-            <button
-              onClick={() => setMenuOpen((s) => !s)}
-              className="p-1"
-              aria-label="Basculer le menu"
-            >
-              {menuOpen ? <X size={24} /> : <MenuIcon size={24} />}
-            </button>
-          ) : (
-            <button
-              onClick={() => router.push("/login")}
-              className="text-sm bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
-            >
-              Se connecter
-            </button>
-          )}
-        </div>
-      </div>
 
-      {/* Menu mobile */}
-      {menuOpen && session && (
-        <div className="md:hidden flex flex-col gap-3 px-4 pb-3">
-          {NAV_LINKS.map((item) => {
-            if (item.children) {
-              const expanded = openDropdown === item.label;
-              return (
-                <div key={item.label}>
-                  <button
-                    onClick={() => setOpenDropdown(expanded ? null : item.label)}
-                    className="flex items-center gap-2 px-2 py-1 text-sm font-medium text-gray-700 w-full"
-                    aria-expanded={expanded}
-                    aria-controls={`submenu-${item.label}`}
-                  >
-                    <item.Icon className="h-4 w-4" />
-                    {item.label}
-                    <svg
-                      className={`w-3 h-3 ml-auto transform ${expanded ? "rotate-180" : ""}`}
-                      viewBox="0 0 10 6"
-                    >
-                      <path d="M0 0 L5 6 L10 0" fill="currentColor" />
-                    </svg>
-                  </button>
-                  {expanded && (
-                    <div id={`submenu-${item.label}`} className="pl-6 mt-1 flex flex-col gap-1">
-                      {item.children.map((child) => (
-                        <Link
-                          href={child.href}
-                          key={child.href}
-                          className={`flex items-center gap-2 text-sm py-1 ${
-                            router.pathname === child.href
-                              ? "text-green-700"
-                              : "text-gray-700 hover:text-green-700"
-                          }`}
-                          onClick={() => setMenuOpen(false)}
-                        >
-                          {child.Icon && <child.Icon className="h-4 w-4" />}
-                          {child.label}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            }
-            return renderLink(item);
-          })}
-          <button
-            onClick={() => signOut()}
-            className="text-sm bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded w-fit"
-          >
-            Se déconnecter
-          </button>
+            {/* Bouton central + */}
+            <button
+              onClick={() => setMenuOpen((o) => !o)}
+              className={`absolute -top-11 left-1/2 -translate-x-1/2 bg-orange-500 hover:bg-orange-600 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-xl border-4 border-white transition-all duration-200 ${
+                !menuOpen ? "animate-glow" : ""
+              }`}
+            >
+              {menuOpen ? <X size={32} /> : <Plus size={32} />}
+            </button>
+
+            {/* Fitness */}
+            <Link
+              href="/training"
+              className={`flex flex-col items-center text-sm ${
+                router.pathname.startsWith("/training") ? "text-orange-500" : "text-gray-500"
+              }`}
+            >
+              <Dumbbell className="h-6 w-6" />
+              <span className="mt-2">Fitness</span>
+            </Link>
+
+            {/* Profil */}
+            <Link
+              href="/mon-compte"
+              className={`flex flex-col items-center text-sm ${
+                router.pathname.startsWith("/mon-compte") ? "text-orange-500" : "text-gray-500"
+              }`}
+            >
+              <User className="h-6 w-6" />
+              <span className="mt-2">Profil</span>
+            </Link>
+
+            {/* --- MENU FLOTTANT + --- */}
+            {menuOpen && (
+              <div className="absolute bottom-24 left-1/2 -translate-x-1/2 bg-white border border-gray-200 rounded-xl shadow-xl py-3 px-4 flex flex-col gap-2 w-48 animate-fade-in">
+                <Link
+                  href="/social"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2 text-sm text-gray-700 hover:text-orange-500"
+                >
+                  <Users className="h-4 w-4 text-orange-500" />
+                  Communauté
+                </Link>
+                <Link
+                  href="/user-points"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2 text-sm text-gray-700 hover:text-orange-500"
+                >
+                  <Gift className="h-4 w-4 text-orange-500" />
+                  Récompenses
+                </Link>
+                <Link
+                  href="/videos"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2 text-sm text-gray-700 hover:text-orange-500"
+                >
+                  <Video className="h-4 w-4 text-orange-500" />
+                  Tutoriels
+                </Link>
+                <a
+                  href="https://wa.me/33658881560?text=Bonjour%20Cl%C3%A9mence%20et%20Romain%2C%20j%27ai%20une%20question%20sur%20votre%20programme"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2 text-sm text-orange-500 hover:text-orange-600 font-medium"
+                >
+                  <MessageCircle className="h-4 w-4 text-orange-500" />
+                  Contact
+                </a>
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    signOut();
+                  }}
+                  className="flex items-center gap-2 text-sm text-red-600 hover:text-red-700"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Déconnexion
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
-    </nav>
+
+      {/* Animation glow optionnelle */}
+      <style jsx>{`
+        @keyframes glow {
+          0% {
+            box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.6);
+          }
+          70% {
+            box-shadow: 0 0 0 10px rgba(249, 115, 22, 0);
+          }
+          100% {
+            box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+          }
+        }
+        .animate-glow {
+          animation: glow 2.4s infinite;
+        }
+      `}</style>
+    </>
   );
 }

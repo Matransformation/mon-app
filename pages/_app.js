@@ -86,9 +86,7 @@ export default function App({ Component, pageProps }) {
         {/* 3) Bannière cookie */}
         <CookieBanner />
 
-        {/* 4) Bouton WhatsApp */}
-        <WhatsappButton />
-
+     
         {/* 5) Bannière mobile (sauf accueil, inscription et login) */}
         {shouldShowBanner && <AddToHomeBanner />}
 
