@@ -116,7 +116,7 @@ export default function Navbar() {
               <span className="text-[11px] font-medium">Nutrition</span>
             </Link>
 
-            {/* Bouton central + (centré) */}
+            {/* Bouton central + */}
             <div className="relative flex flex-col items-center -translate-y-[2px]">
               <button
                 onClick={toggleMenu}
@@ -126,7 +126,7 @@ export default function Navbar() {
                     : "bg-orange-500 hover:bg-orange-600 text-white animate-glow"
                 }`}
               >
-                {menuOpen ? <X size={26} /> : <Plus size={28} />}
+                <Plus size={28} />
               </button>
             </div>
 
@@ -163,14 +163,26 @@ export default function Navbar() {
                   }`}
                 ></div>
 
-                {/* Menu flottant */}
+                {/* Menu flottant avec bouton fermer */}
                 <div
-                  className={`absolute left-1/2 -translate-x-1/2 bg-white border border-gray-200 rounded-2xl shadow-xl py-4 px-5 flex flex-col gap-3 w-52 z-50 transform transition-all duration-300 ${
+                  className={`absolute left-1/2 -translate-x-1/2 bg-white border border-gray-200 rounded-2xl shadow-xl py-4 px-5 flex flex-col gap-3 w-56 z-50 transform transition-all duration-300 ${
                     menuVisible
-                      ? "bottom-[110px] opacity-100 translate-y-0"
+                      ? "bottom-[120px] opacity-100 translate-y-0"
                       : "bottom-[90px] opacity-0 translate-y-4"
                   }`}
                 >
+                  {/* Header du menu avec croix */}
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-sm font-semibold text-gray-700">Menu rapide</h3>
+                    <button
+                      onClick={toggleMenu}
+                      className="text-gray-400 hover:text-orange-500 transition"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  {/* Liens */}
                   {[
                     { href: "/social", icon: <Users className="h-4 w-4 text-orange-500" />, label: "Communauté" },
                     { href: "/user-points", icon: <Gift className="h-4 w-4 text-orange-500" />, label: "Récompenses" },
@@ -198,11 +210,6 @@ export default function Navbar() {
                     rel="noopener noreferrer"
                     onClick={() => setMenuOpen(false)}
                     className="flex items-center gap-2 text-sm text-orange-500 hover:text-orange-600 font-medium transition"
-                    style={{
-                      transitionDelay: `180ms`,
-                      opacity: menuVisible ? 1 : 0,
-                      transform: menuVisible ? "translateY(0)" : "translateY(8px)",
-                    }}
                   >
                     <MessageCircle className="h-4 w-4 text-orange-500" />
                     Contact
@@ -214,11 +221,6 @@ export default function Navbar() {
                       signOut();
                     }}
                     className="flex items-center gap-2 text-sm text-red-600 hover:text-red-700 transition"
-                    style={{
-                      transitionDelay: `240ms`,
-                      opacity: menuVisible ? 1 : 0,
-                      transform: menuVisible ? "translateY(0)" : "translateY(8px)",
-                    }}
                   >
                     <LogOut className="h-4 w-4" />
                     Déconnexion
