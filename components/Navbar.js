@@ -52,6 +52,19 @@ export default function Navbar() {
     }
   };
 
+  // ✅ Ajoute du padding-bottom à la balise <main> (et non au body)
+  useEffect(() => {
+    const mains = document.querySelectorAll("main, .page-container, .content");
+    mains.forEach((m) => {
+      m.style.paddingBottom = "100px"; // correspond à la hauteur de la barre
+    });
+    return () => {
+      mains.forEach((m) => {
+        m.style.paddingBottom = "";
+      });
+    };
+  }, []);
+
   return (
     <>
       {/* --- HEADER --- */}
@@ -155,7 +168,6 @@ export default function Navbar() {
             {/* --- MENU FLOTTANT --- */}
             {menuOpen && (
               <>
-                {/* Fond flouté */}
                 <div
                   onClick={toggleMenu}
                   className={`fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-opacity duration-300 ${
@@ -163,7 +175,6 @@ export default function Navbar() {
                   }`}
                 ></div>
 
-                {/* Menu flottant avec bouton fermer */}
                 <div
                   className={`absolute left-1/2 -translate-x-1/2 bg-white border border-gray-200 rounded-2xl shadow-xl py-4 px-5 flex flex-col gap-3 w-56 z-50 transform transition-all duration-300 ${
                     menuVisible
@@ -171,7 +182,6 @@ export default function Navbar() {
                       : "bottom-[90px] opacity-0 translate-y-4"
                   }`}
                 >
-                  {/* Header du menu avec croix */}
                   <div className="flex justify-between items-center mb-2">
                     <h3 className="text-sm font-semibold text-gray-700">Menu rapide</h3>
                     <button
@@ -182,7 +192,6 @@ export default function Navbar() {
                     </button>
                   </div>
 
-                  {/* Liens */}
                   {[
                     { href: "/social", icon: <Users className="h-4 w-4 text-orange-500" />, label: "Communauté" },
                     { href: "/user-points", icon: <Gift className="h-4 w-4 text-orange-500" />, label: "Récompenses" },
@@ -205,7 +214,7 @@ export default function Navbar() {
                   ))}
 
                   <a
-                    href="https://wa.me/33658881560?text=Bonjour%20Cl%C3%A9mence%20et%20Romain%2C%20j%27ai%20une%20question%20sur%20votre%20programme"
+                    href="https://wa.me/33658881560?text=Bonjour%20Cl%C3%A9mence%20et%20Romain%2C%20j%27ai%20une%20question"
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setMenuOpen(false)}
@@ -232,7 +241,6 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* --- Animations --- */}
       <style jsx>{`
         @keyframes glow {
           0% {
