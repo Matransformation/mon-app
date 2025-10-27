@@ -1,43 +1,62 @@
 // pages/_app.js
-import "../styles/globals.css"
-import { SessionProvider } from "next-auth/react"
-import { SpeedInsights } from "@vercel/speed-insights/next"
-import Script from "next/script"
-import CookieBanner from "../components/CookieBanner"
-import WhatsappButton from "../components/WhatsappButton"
-import { GlobalToaster } from "../components/Feedback/Toasts"
-import { useEffect, useState } from "react"
-import { Cookies } from "react-cookie-consent"
-import "../styles/print.css"
+import "../styles/globals.css";
+import { SessionProvider } from "next-auth/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import Script from "next/script";
+import CookieBanner from "../components/CookieBanner";
+import WhatsappButton from "../components/WhatsappButton";
+import { GlobalToaster } from "../components/Feedback/Toasts";
+import { useEffect, useState } from "react";
+import { Cookies } from "react-cookie-consent";
+import "../styles/print.css";
 
-// ⬇️ NEW
-import useScrollRestoration from "../hooks/useScrollRestoration"
-import { useRouter } from "next/router"
-import AddToHomeBanner from "../components/AddToHomeBanner"
+import useScrollRestoration from "../hooks/useScrollRestoration";
+import { useRouter } from "next/router";
+import AddToHomeBanner from "../components/AddToHomeBanner";
 
 export default function App({ Component, pageProps }) {
-  const [hasConsent, setHasConsent] = useState(false)
-  const router = useRouter()
+  const [hasConsent, setHasConsent] = useState(false);
+  const router = useRouter();
 
-  // Active la restauration du scroll globalement
-  useScrollRestoration()
+  // ✅ Restauration du scroll global
+  useScrollRestoration();
 
-  // Vérifie le consentement cookies
+  // ✅ Vérifie le consentement cookie
   useEffect(() => {
-    const consent = Cookies.get("cookieConsent") // "true" si accepté
-    if (consent === "true") {
-      setHasConsent(true)
-    }
-  }, [])
+    const consent = Cookies.get("cookieConsent");
+    if (consent === "true") setHasConsent(true);
+  }, []);
 
-  // Pages où la bannière ne doit PAS apparaître
-  const excludedRoutes = ["/", "/register", "/login"]
-  const shouldShowBanner = !excludedRoutes.includes(router.pathname)
+  // ✅ Enregistre le Service Worker pour activer le mode PWA
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register("/service-worker.js")
+        .then(() => console.log("✅ Service worker enregistré"))
+        .catch((err) => console.warn("Erreur Service Worker :", err));
+    }
+  }, []);
+
+  // ✅ Forcer le démarrage sur "/" si l’app est ouverte en PWA depuis une autre page
+  useEffect(() => {
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      window.navigator.standalone === true;
+
+    if (isStandalone && window.location.pathname !== "/") {
+      console.log("📱 Lancement PWA → redirection vers /");
+      window.location.replace("/");
+    }
+  }, []);
+
+  // ✅ Pages où la bannière ne doit PAS apparaître
+  const excludedRoutes = ["/", "/register", "/login"];
+  const shouldShowBanner = !excludedRoutes.includes(router.pathname);
 
   return (
     <SessionProvider session={pageProps.session}>
       <>
-        {/* 1) Scripts marketing (GA4 + FB Pixel) si l’utilisateur a accepté */}
+        {/* Google Analytics + Facebook Pixel si consentement */}
         {hasConsent && (
           <>
             {/* Google Analytics 4 */}
@@ -52,8 +71,8 @@ export default function App({ Component, pageProps }) {
                 __html: `
                   window.dataLayer = window.dataLayer || [];
                   function gtag(){dataLayer.push(arguments);}
-                  gtag('js', new Date());
-                  gtag('config', 'G-J3JHVGXW4Z');
+                  gtag("js", new Date());
+                  gtag("config", "G-J3JHVGXW4Z");
                 `,
               }}
             />
@@ -80,19 +99,18 @@ export default function App({ Component, pageProps }) {
           </>
         )}
 
-        {/* 2) Contenu principal */}
+        {/* Contenu principal */}
         <Component {...pageProps} />
 
-        {/* 3) Bannière cookie */}
+        {/* Bannière cookies */}
         <CookieBanner />
 
-     
-        {/* 5) Bannière mobile (sauf accueil, inscription et login) */}
+        {/* Bannière mobile (hors accueil, inscription, login) */}
         {shouldShowBanner && <AddToHomeBanner />}
 
-        {/* 6) Speed Insights (Vercel) */}
+        {/* Speed Insights (Vercel) */}
         <SpeedInsights />
       </>
     </SessionProvider>
-  )
+  );
 }
