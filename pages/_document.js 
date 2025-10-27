@@ -1,4 +1,3 @@
-// pages/_document.js
 import { Html, Head, Main, NextScript } from "next/document";
 
 export default function Document() {
@@ -57,29 +56,21 @@ export default function Document() {
 
         {/* ✅ Favicons & PWA */}
         <link rel="icon" href="/favicon.ico" />
-
-        {/* Apple touch icons */}
-        <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180x180.png" />
-        <link rel="apple-touch-icon" sizes="192x192" href="/favicon-192x192.png" />
-        <link rel="apple-touch-icon" sizes="512x512" href="/favicon-512x512.png" />
-
-        {/* Standard icons */}
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-        <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
-        <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192x192.png" />
-        <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/site.webmanifest" />
 
-        {/* ✅ Manifest */}
-<link rel="manifest" href="/site.webmanifest" crossOrigin="use-credentials" />
-
-        {/* ✅ iOS meta */}
+        {/* ✅ Couleurs & métadonnées PWA */}
         <meta name="theme-color" content="#ff7a00" />
+        <meta name="application-name" content="MaTransformation" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="MaTransformation" />
       </Head>
 
       <body>
+        {/* ✅ Facebook Pixel (no-script fallback) */}
         <noscript>
           <img
             height="1"
@@ -89,6 +80,7 @@ export default function Document() {
             alt="fb-pixel"
           />
         </noscript>
+
         <Main />
         <NextScript />
       </body>
