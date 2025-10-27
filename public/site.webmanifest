@@ -2,18 +2,16 @@
   "name": "MaTransformation",
   "short_name": "MaTransfo",
   "description": "L’expérience nutrition augmentée 🥕",
-  "start_url": "/?source=pwa",
-  "scope": "/",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ff7a00",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/favicon-180x180.png",
-      "sizes": "180x180",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "src": "/favicon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png"
     },
     {
       "src": "/favicon-192x192.png",
