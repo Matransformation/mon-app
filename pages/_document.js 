@@ -72,7 +72,7 @@ export default function Document() {
         <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png" />
 
         {/* — Manifest + meta PWA — */}
-        <link rel="manifest" href="/manifest.json" />
+        <link rel="manifest" href="/manifest.json?v=5" />
         <meta name="theme-color" content="#ff7a00" />
       </Head>
 
